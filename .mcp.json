@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "electron-viewer": {
+      "command": "node",
+      "args": ["bin/electron-viewer.js", "mcp", "--project", "example"],
+      "env": {
+        "ELECTRON_VIEWER_URL": "http://localhost:8094"
+      }
+    }
+  }
+}

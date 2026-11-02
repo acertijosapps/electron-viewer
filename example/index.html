@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
+    <title>Electron Viewer example</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font: 14px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      body {
+        margin: 0;
+        display: grid;
+        grid-template-columns: 1fr 260px;
+        height: 100vh;
+      }
+      main {
+        padding: 20px;
+        overflow: auto;
+      }
+      aside {
+        border-left: 1px solid #8884;
+        overflow: auto;
+      }
+      aside li {
+        padding: 10px 14px;
+        border-bottom: 1px solid #8882;
+      }
+      aside ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      button,
+      input {
+        font: inherit;
+        padding: 6px 10px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 12px 0;
+      }
+      #board {
+        position: relative;
+        height: 220px;
+        border: 1px dashed #8888;
+        border-radius: 8px;
+      }
+      #box {
+        position: absolute;
+        left: 20px;
+        top: 20px;
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        background: #2f6f4f;
+        color: #fff;
+        display: grid;
+        place-items: center;
+        cursor: grab;
+        user-select: none;
+      }
+      #box:hover {
+        outline: 3px solid #5fae86;
+      }
+      #log {
+        font-family: ui-monospace, monospace;
+        white-space: pre-wrap;
+        min-height: 3em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Electron Viewer example</h1>
+      <div class="row">
+        <button id="count">Clicked 0 times</button>
+        <button id="dialog">Native dialog</button>
+        <button id="new-window">New window</button>
+      </div>
+      <div class="row">
+        <input id="name" placeholder="Type here" aria-label="Name" />
+        <span id="echo"></span>
+      </div>
+      <p>Drag the square. Right-click anywhere for a native context menu.</p>
+      <div id="board"><div id="box">Drag me</div></div>
+      <p id="log" aria-live="polite"></p>
+    </main>
+    <aside aria-label="Scrollable list"><ul id="list"></ul></aside>
+    <script src="renderer.js"></script>
+  </body>
+</html>

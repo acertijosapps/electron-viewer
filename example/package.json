@@ -1,0 +1,13 @@
+{
+  "name": "electron-viewer-example",
+  "private": true,
+  "version": "1.0.0",
+  "description": "App Electron de ejemplo para probar Electron Viewer: botones, texto, arrastre, scroll, menú contextual y diálogos nativos.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "44.9.3"
+  }
+}

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Electron Viewer</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <select id="window" aria-label="Window"></select>
+      <button id="launch-top" class="primary" hidden>Launch</button>
+      <span id="status" aria-live="polite"></span>
+    </header>
+    <main id="stage">
+      <canvas id="screen" width="0" height="0" aria-label="App window"></canvas>
+      <textarea id="keys" aria-label="Keyboard input for the app" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+      <div id="placeholder">
+        <p id="placeholder-text">Connecting…</p>
+        <button id="launch" class="primary" hidden>Launch app</button>
+        <form id="attach" hidden>
+          <label for="attach-port">or attach to a debugging port</label>
+          <input id="attach-port" type="number" min="1" max="65535" value="9222" aria-label="CDP port" />
+          <button type="submit">Attach</button>
+        </form>
+      </div>
+    </main>
+    <footer class="bar controls">
+      <div class="group" role="group" aria-label="Page">
+        <button id="reload" title="Reload">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 5v5h-5" /><path d="M18.5 15a7 7 0 1 1-1.2-7.4L20 10" /></svg>
+        </button>
+        <button id="devtools" title="Toggle DevTools">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 8-4 4 4 4M15 8l4 4-4 4" /></svg>
+        </button>
+      </div>
+      <div class="group" role="group" aria-label="Window size">
+        <select id="size" title="Window size">
+          <option value="">Window size</option>
+          <option value="1440x900">1440 × 900</option>
+          <option value="1280x800">1280 × 800</option>
+          <option value="1024x768">1024 × 768</option>
+          <option value="800x600">800 × 600</option>
+          <option value="390x844">390 × 844</option>
+        </select>
+      </div>
+      <div class="group" role="group" aria-label="Capture">
+        <button id="frame" title="Show the native window frame, menus and dialogs (needs the main process)" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2" /><path d="M3.5 9h17" /></svg>
+        </button>
+        <button id="screenshot" title="Save screenshot (PNG)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
+        </button>
+      </div>
+    </footer>
+    <script type="module" src="viewer.js"></script>
+  </body>
+</html>
