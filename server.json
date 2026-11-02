@@ -1,0 +1,43 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.acertijosapps/electron-viewer",
+  "title": "Electron Viewer",
+  "description": "Drive Electron apps over CDP: screenshots, clicks, drags, keys, JS in renderer and main, logs.",
+  "repository": {
+    "url": "https://github.com/acertijosapps/electron-viewer",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/acertijosapps/electron-viewer#readme",
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@acertijosapps/electron-viewer",
+      "version": "0.1.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "ELECTRON_VIEWER_URL",
+          "description": "Viewer to show actions live (default http://localhost:8094); without it, CDP is used directly",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "ELECTRON_VIEWER_PROJECT",
+          "description": "Electron project folder that launch_app starts with `electron .` (default: the current folder)",
+          "isRequired": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
