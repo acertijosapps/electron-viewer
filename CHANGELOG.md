@@ -6,6 +6,16 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/); version
 ## [Sin liberar]
 
 ### Añadido
+
+### Cambiado
+
+### Corregido
+
+### Eliminado
+
+## [1.0.0] - 2026-11-02
+
+### Añadido
 - Visor web de apps Electron: `Page.startScreencast` (JPEG) por WebSocket a un canvas, con el último frame guardado para quien se conecta después. Con el foco y el ciclo de vida emulados, la ventana sigue pintando aunque esté tapada o minimizada.
 - Input en vivo desde el visor: movimiento y hover, clic, doble y triple clic, botón derecho, arrastre real, rueda y teclado completo (un textarea invisible recibe las teclas y también el texto de IME o dictado). En macOS, ⌘A/⌘C/⌘V/⌘X/⌘Z van como comandos de edición.
 - Combo con las apps (puertos CDP 9222–9231, lanzadas o adjuntadas) y sus ventanas; botón para lanzar `electron .` del proyecto en puertos libres (CDP desde 9222, inspector del main desde 9229) y formulario para adjuntarse a un puerto.
@@ -20,12 +30,6 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/); version
 - App de ejemplo en `example/` (fuera del paquete de npm) para probar clics, texto, arrastre, scroll, menú contextual, diálogos y varias ventanas.
 - Registro oficial de MCP como `io.github.acertijosapps/electron-viewer`: `mcpName` en `package.json`, `server.json` y workflow que valida `server.json` en cada PR y lo publica por OIDC al crear un Release de GitHub.
 - Git flow del proyecto: CHANGELOG, guía de contribución, hooks de git (Conventional Commits y ramas protegidas) y CI en GitHub Actions.
-
-### Cambiado
-
-### Corregido
-
-### Eliminado
 
 <!--
  Al promover beta → main: renombra [Sin liberar] a [X.Y.Z] - AAAA-MM-DD y vuelve a crear una
