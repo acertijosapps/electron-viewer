@@ -205,6 +205,12 @@ the query string or the body and is optional with a single window. The server on
 - Apps that build before starting (Forge, electron-vite) can't be launched from the viewer; start them
   with the debugging flags and they are picked up.
 
+## Contributing
+
+Branching model (`main` · `beta`), Conventional Commits and releases are described in
+[CONTRIBUTING.md](./CONTRIBUTING.md); changes are listed in [CHANGELOG.md](./CHANGELOG.md). The
+example app in [`example/`](./example) is there to try changes.
+
 ## Author
 
 Made by [AcertijosApps](https://acertijosapps.com/librerias). See the rest of our libraries at
