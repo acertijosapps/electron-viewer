@@ -88,6 +88,9 @@ Any other MCP client:
 }
 ```
 
+Also listed in the [official MCP Registry](https://registry.modelcontextprotocol.io) as
+`io.github.acertijosapps/electron-viewer`.
+
 Keep the viewer running (`npx @acertijosapps/electron-viewer`) to watch what the agent does. Without
 it, the MCP drives the app over CDP directly. Apps launched by either one are visible to the other.
 

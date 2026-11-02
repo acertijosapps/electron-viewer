@@ -1,5 +1,6 @@
 {
   "name": "@acertijosapps/electron-viewer",
+  "mcpName": "io.github.acertijosapps/electron-viewer",
   "version": "0.1.0",
   "description": "Visor web de apps Electron en vivo (screencast por CDP, input de mouse y teclado, captura con el marco nativo) y MCP para que un agente las maneje.",
   "type": "module",
