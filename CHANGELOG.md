@@ -29,7 +29,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/); version
 - Comando `electron-viewer` para `npx @acertijosapps/electron-viewer`: sin argumentos arranca el visor (`--port`, `--host`, `--project`, `--attach`, `--inspect`) y `mcp` arranca el MCP (`--viewer-url`, `--project`); `--help` y `--version`.
 - App de ejemplo en `example/` (fuera del paquete de npm) para probar clics, texto, arrastre, scroll, menú contextual, diálogos y varias ventanas.
 - Registro oficial de MCP como `io.github.acertijosapps/electron-viewer`: `mcpName` en `package.json`, `server.json` y workflow que valida `server.json` en cada PR y lo publica por OIDC al crear un Release de GitHub.
-- Git flow del proyecto: CHANGELOG, guía de contribución, hooks de git (Conventional Commits y ramas protegidas) y CI en GitHub Actions.
+- Git flow del proyecto: CHANGELOG, guía de contribución, hooks de git (Conventional Commits y ramas protegidas) y CI en GitHub Actions. `npm install` en el repo activa los hooks con un script `prepare`, que no corre al instalar el paquete desde npm.
 
 <!--
  Al promover beta → main: renombra [Sin liberar] a [X.Y.Z] - AAAA-MM-DD y vuelve a crear una

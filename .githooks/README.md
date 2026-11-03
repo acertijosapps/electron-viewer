@@ -12,10 +12,12 @@ persona o por un agente. Alinean el manual de versionado del equipo.
 ## Activación
 
 `core.hooksPath` es config local por clon (no se versiona), así que cada clon la activa una vez.
-El proyecto lo automatiza con un script `postinstall` en `package.json`:
+El proyecto lo automatiza con un script `prepare` en `package.json` (no `postinstall`: npm
+corre el `postinstall` de las dependencias y cambiaría `core.hooksPath` en el repo de quien instala
+el paquete):
 
 ```json
-"scripts": { "postinstall": "git config core.hooksPath .githooks || exit 0" }
+"scripts": { "prepare": "git config core.hooksPath .githooks || exit 0" }
 ```
 
 Así, en cada `npm install` queda cableado. Manual, si hiciera falta:
