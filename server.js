@@ -1,7 +1,6 @@
 // Visor web de apps Electron.
 // Video: `Page.startScreencast` (JPEG) de la ventana elegida, reenviado por WebSocket a un canvas.
-// Modo marco: capturas de pantalla del área de la ventana desde el proceso main (desktopCapturer),
-// con barra de título, menús y diálogos nativos. Input: `Input.dispatchMouseEvent` y `Input.dispatchKeyEvent`.
+// Input: `Input.dispatchMouseEvent` y `Input.dispatchKeyEvent`.
 
 import http from 'node:http';
 import path from 'node:path';
@@ -10,7 +9,6 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import {
   attachApp,
-  captureNative,
   createActions,
   dispatchKey,
   pageClient,
@@ -26,11 +24,9 @@ const HOST = process.env.HOST || '127.0.0.1';
 const PROJECT = process.env.ELECTRON_VIEWER_PROJECT || process.cwd();
 const MAX_DIM = Number(process.env.MAX_DIM) || 1920; // lado mayor de los frames del screencast
 const QUALITY = Number(process.env.QUALITY) || 80; // calidad JPEG
-const NATIVE_INTERVAL_MS = 250; // modo marco: una captura cada 250 ms como mucho
 const MAX_CLIENT_BUFFER = 4 * 1024 * 1024;
 const MAX_BODY_BYTES = 256 * 1024;
 const FLAG_SCREENCAST = 0;
-const FLAG_NATIVE = 1;
 
 const LOOPBACK = ['localhost', '127.0.0.1', '[::1]', '::1'];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -50,8 +46,6 @@ class WindowSession {
     this.ready = null;
     this.viewport = null;
     this.lastFrame = null;
-    this.frameMode = false;
-    this.content = null; // área del contenido dentro de la captura nativa
     this.queue = Promise.resolve();
     this.pendingMove = null;
     this.onScreencast = (e) => this.handleScreencast(e);
@@ -98,7 +92,6 @@ class WindowSession {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
-    this.frameMode = false;
     sessions.delete(this.key);
     const page = this.page;
     if (!page) return;
@@ -116,14 +109,11 @@ class WindowSession {
       app: { id: this.app.id, name: this.app.name, main: this.app.main },
       width: this.viewport?.width,
       height: this.viewport?.height,
-      frame: this.frameMode,
-      content: this.frameMode ? this.content : null,
     };
   }
 
   handleScreencast({ data, metadata, sessionId }) {
     this.page.send('Page.screencastFrameAck', { sessionId }).catch(() => {});
-    if (this.frameMode) return;
     const { deviceWidth: width, deviceHeight: height } = metadata;
     if (width && height && (width !== this.viewport?.width || height !== this.viewport?.height)) {
       this.viewport = { ...this.viewport, width, height };
@@ -138,41 +128,6 @@ class WindowSession {
     for (const ws of this.clients) {
       // Un cliente lento se salta frames: el siguiente lo pone al día.
       if (ws.readyState === ws.OPEN && ws.bufferedAmount < MAX_CLIENT_BUFFER) ws.send(msg);
-    }
-  }
-
-  async setFrameMode(on) {
-    if (on === this.frameMode) return;
-    if (on && !this.app.main) throw new Error('Frame capture needs the main process: launch the app from the viewer or attach with an inspect port');
-    this.frameMode = on;
-    if (on) {
-      await this.page.send('Page.stopScreencast').catch(() => {});
-      this.nativeLoop();
-    } else {
-      this.content = null;
-      await this.startScreencast();
-    }
-    this.broadcastJson(this.meta());
-  }
-
-  async nativeLoop() {
-    while (this.frameMode && !this.disposed) {
-      const started = Date.now();
-      try {
-        const shot = await captureNative(this.app, this.id, { format: 'jpeg', quality: QUALITY, maxDim: MAX_DIM });
-        if (!this.frameMode) break;
-        if (JSON.stringify(shot.content) !== JSON.stringify(this.content)) {
-          this.content = shot.content;
-          this.broadcastJson(this.meta());
-        }
-        this.broadcastFrame(FLAG_NATIVE, shot.data);
-      } catch (err) {
-        log(this.app.name, 'frame capture failed:', err.message);
-        this.broadcastJson({ type: 'error', message: err.message });
-        await this.setFrameMode(false).catch(() => {});
-        break;
-      }
-      await sleep(Math.max(0, NATIVE_INTERVAL_MS - (Date.now() - started)));
     }
   }
 
@@ -250,14 +205,6 @@ class WindowSession {
       }
       case 'text':
         if (typeof msg.text === 'string' && msg.text) this.enqueue(() => this.page.send('Input.insertText', { text: msg.text.slice(0, 10000) }));
-        break;
-      case 'frame':
-        try {
-          await this.setFrameMode(Boolean(msg.on));
-        } catch (err) {
-          this.send(ws, { type: 'error', message: err.message });
-          this.send(ws, this.meta());
-        }
         break;
     }
   }
@@ -343,7 +290,6 @@ async function handleApi(req, res, url) {
       'x-window': shot.window,
     };
     if (shot.viewport) Object.assign(headers, { 'x-viewport-width': shot.viewport.width, 'x-viewport-height': shot.viewport.height });
-    if (shot.content) headers['x-content'] = JSON.stringify(shot.content);
     res.writeHead(200, headers);
     res.end(shot.data);
     return;

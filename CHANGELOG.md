@@ -6,13 +6,14 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/); version
 ## [Sin liberar]
 
 ### Añadido
-- Tooltips propios en los controles del visor (lanzar, ventana, recargar, DevTools, tamaño, marco y captura), porque el panel de navegador de Claude no muestra los de `title`. Salen al pasar el puntero o al enfocar con el teclado, también en botones deshabilitados (el de marco explica por qué lo está).
+- Tooltips propios en los controles del visor (lanzar, ventana, recargar, DevTools, tamaño y captura), porque el panel de navegador de Claude no muestra los de `title`. Salen al pasar el puntero o al enfocar con el teclado, también en botones deshabilitados.
 
 ### Cambiado
 
 ### Corregido
 
 ### Eliminado
+- Modo marco del visor y `frame` de `screenshot` (MCP y `GET /api/screenshot`). Recortaba la pantalla en el área de la ventana, así que también capturaba cualquier otra ventana que la tapara y la mandaba al visor o al agente; los menús contextuales nativos, además, no salían. Capturar solo la ventana con su marco no es posible desde Electron en macOS (`desktopCapturer` no lista las ventanas de la propia app), así que se quita.
 
 ## [1.0.0] - 2026-11-02
 

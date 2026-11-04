@@ -40,7 +40,6 @@ async function viewer(method, route, params = {}) {
   }
   const type = res.headers.get('content-type') || '';
   if (!type.startsWith('image/')) return res.json();
-  const content = res.headers.get('x-content');
   const vw = res.headers.get('x-viewport-width');
   return {
     data: Buffer.from(await res.arrayBuffer()),
@@ -49,7 +48,6 @@ async function viewer(method, route, params = {}) {
     height: Number(res.headers.get('x-image-height')),
     window: res.headers.get('x-window'),
     viewport: vw ? { width: Number(vw), height: Number(res.headers.get('x-viewport-height')) } : undefined,
-    content: content ? JSON.parse(content) : undefined,
   };
 }
 
@@ -82,7 +80,7 @@ server.registerTool(
     title: 'List windows',
     description:
       'Lists the running Electron apps (found on CDP ports 9222–9231, launched or attached) and their windows. ' +
-      'main=true means the main process is reachable (evaluate_main, frame screenshots, real window resizing). ' +
+      'main=true means the main process is reachable (evaluate_main, real window resizing). ' +
       'Includes the viewer URL to watch a window live in a browser pane.',
     annotations: { readOnlyHint: true },
   },
@@ -130,22 +128,15 @@ server.registerTool(
     title: 'Screenshot',
     description:
       'Captures the window content (PNG). For click, drag, hover and scroll use normalized coordinates: ' +
-      'x = pixel_x / image width, y = pixel_y / image height. With frame=true it captures the screen area of ' +
-      'the window instead, with its native title bar, menus and dialogs (needs main=true; on macOS the app needs ' +
-      'the Screen Recording permission); coordinates still refer to the content screenshot.',
+      'x = pixel_x / image width, y = pixel_y / image height. Native UI (title bar, menus, dialogs) is not included.',
     inputSchema: {
       window: windowArg,
-      frame: z.boolean().optional().describe('Include the native window frame, menus and dialogs'),
     },
     annotations: { readOnlyHint: true },
   },
-  async ({ window, frame }) => {
-    const { result: shot } = await run('screenshot', 'GET', '/api/screenshot', { window, max: SCREENSHOT_MAX, frame: frame ? 1 : undefined });
-    const c = shot.content;
-    const note = c
-      ? `Window with frame, ${shot.width}×${shot.height} px. Content area: x ${c.x.toFixed(3)}–${(c.x + c.width).toFixed(3)}, ` +
-        `y ${c.y.toFixed(3)}–${(c.y + c.height).toFixed(3)} of the image; click coordinates are normalized over the content only.`
-      : `Viewport is ${shot.viewport?.width}×${shot.viewport?.height} CSS px (image ${shot.width}×${shot.height}, longest side ≤ ${SCREENSHOT_MAX}).`;
+  async ({ window }) => {
+    const { result: shot } = await run('screenshot', 'GET', '/api/screenshot', { window, max: SCREENSHOT_MAX });
+    const note = `Viewport is ${shot.viewport?.width}×${shot.viewport?.height} CSS px (image ${shot.width}×${shot.height}, longest side ≤ ${SCREENSHOT_MAX}).`;
     return {
       content: [
         { type: 'image', data: shot.data.toString('base64'), mimeType: shot.mimeType },
