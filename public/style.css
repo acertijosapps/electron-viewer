@@ -197,10 +197,6 @@ button:disabled {
   outline-offset: -2px;
 }
 
-#screen.native {
-  cursor: default;
-}
-
 .group select {
   border-radius: 6px;
   cursor: pointer;

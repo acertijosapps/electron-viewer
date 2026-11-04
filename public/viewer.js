@@ -10,7 +10,6 @@ const launchButton = $('#launch');
 const launchTop = $('#launch-top');
 const attachForm = $('#attach');
 const sizeSelect = $('#size');
-const frameButton = $('#frame');
 const controls = $('.controls');
 
 const TARGETS_REFRESH_MS = 3000;
@@ -96,18 +95,12 @@ function renderStatus(text) {
   }
   if (!meta || performance.now() < noteUntil) return;
   statusEl.title = '';
-  statusEl.textContent = `${meta.width}×${meta.height}${meta.frame ? ' · frame' : ''} · ${fps} fps`;
+  statusEl.textContent = `${meta.width}×${meta.height} · ${fps} fps`;
 }
 
 function onJson(msg) {
   if (msg.type === 'meta') {
     meta = msg;
-    frameButton.setAttribute('aria-pressed', String(Boolean(msg.frame)));
-    frameButton.disabled = !msg.app?.main;
-    frameButton.dataset.tip = msg.app?.main
-      ? `${msg.frame ? 'Hide' : 'Show'} the native window frame`
-      : 'Native frame needs the main process: launch the app from here or attach with --inspect';
-    canvas.classList.toggle('native', Boolean(msg.frame));
     sizeSelect.options[0].textContent = `Window size (${msg.width} × ${msg.height})`;
     renderStatus();
   } else if (msg.type === 'error') {
@@ -133,7 +126,6 @@ function showMessage(text, { launch = false } = {}) {
 
 function setControlsEnabled(enabled) {
   controls.querySelectorAll('button, select').forEach((b) => (b.disabled = !enabled));
-  if (enabled) frameButton.disabled = !selected()?.app.main;
 }
 
 function disconnect() {
@@ -280,13 +272,11 @@ sizeSelect.onchange = async () => {
   await control('resize', { width, height });
 };
 
-frameButton.onclick = () => send({ type: 'frame', on: !meta?.frame });
-
 $('#screenshot').onclick = async () => {
   if (!windowId) return;
   renderStatus('Saving screenshot…');
   try {
-    const res = await api('GET', `screenshot?window=${encodeURIComponent(windowId)}${meta?.frame ? '&frame=1' : ''}`);
+    const res = await api('GET', `screenshot?window=${encodeURIComponent(windowId)}`);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(await res.blob());
     const name = (selected()?.app.name || 'electron').replace(/[^\w.-]+/g, '-');
@@ -302,8 +292,7 @@ $('#screenshot').onclick = async () => {
 
 // ---------- Input ----------
 
-// Posición normalizada (0–1) dentro del contenido de la ventana, descontando el letterbox de
-// object-fit y, en modo marco, la barra de título y los bordes.
+// Posición normalizada (0–1) dentro del contenido de la ventana, descontando el letterbox de object-fit.
 function toNorm(e) {
   const r = canvas.getBoundingClientRect();
   const ar = canvas.width / canvas.height;
@@ -318,13 +307,8 @@ function toNorm(e) {
     h = w / ar;
     oy = (r.height - h) / 2;
   }
-  let x = (e.clientX - r.left - ox) / w;
-  let y = (e.clientY - r.top - oy) / h;
-  const c = meta?.frame && meta.content;
-  if (c) {
-    x = (x - c.x) / c.width;
-    y = (y - c.y) / c.height;
-  }
+  const x = (e.clientX - r.left - ox) / w;
+  const y = (e.clientY - r.top - oy) / h;
   return { x, y };
 }
 

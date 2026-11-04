@@ -24,8 +24,8 @@ Viewer options:
       --attach <port>      Attach at startup to an app already running with
                            --remote-debugging-port=<port>
       --inspect <port>     With --attach: the app's main process inspector
-                           (--inspect=<port>), for evaluate_main, frame capture,
-                           DevTools and real window resizing
+                           (--inspect=<port>), for evaluate_main, DevTools and
+                           real window resizing
 
 MCP options:
       --viewer-url <url>   Viewer to talk to (default: http://localhost:8094,
