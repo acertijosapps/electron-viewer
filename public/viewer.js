@@ -498,6 +498,8 @@ document.addEventListener('pointerdown', hideTip);
 document.addEventListener('focusin', (e) => (e.target.matches?.(':focus-visible') ? showTip(e.target.closest('[data-tip]')) : hideTip()));
 document.addEventListener('focusout', hideTip);
 addEventListener('blur', hideTip);
+// Con otro tamaño de página la posición ya no vale.
+addEventListener('resize', hideTip);
 
 renderTouch();
 setControlsEnabled(false);
