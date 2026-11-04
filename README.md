@@ -31,7 +31,7 @@ control the same app window, in real time.
 From your Electron project folder:
 
 ```sh
-npx @acertijosapps/electron-viewer
+npx @acertijosapps/electron-viewer@1.0.0
 ```
 
 Open <http://localhost:8094> and click **Launch**. The viewer runs `electron .` on free debugging
@@ -71,7 +71,7 @@ Other environment variables: `MAX_DIM` (longest side of the streamed frames, def
 Claude Code:
 
 ```sh
-claude mcp add electron-viewer -- npx -y @acertijosapps/electron-viewer mcp
+claude mcp add electron-viewer -- npx -y @acertijosapps/electron-viewer@1.0.0 mcp
 ```
 
 Any other MCP client:
@@ -81,7 +81,7 @@ Any other MCP client:
   "mcpServers": {
     "electron-viewer": {
       "command": "npx",
-      "args": ["-y", "@acertijosapps/electron-viewer", "mcp"]
+      "args": ["-y", "@acertijosapps/electron-viewer@1.0.0", "mcp"]
     }
   }
 }
@@ -90,7 +90,10 @@ Any other MCP client:
 Also listed in the [official MCP Registry](https://registry.modelcontextprotocol.io) as
 `io.github.acertijosapps/electron-viewer`.
 
-Keep the viewer running (`npx @acertijosapps/electron-viewer`) to watch what the agent does. Without
+The examples pin an exact version. The viewer and the MCP can run code in your app, so pin the version
+you reviewed instead of letting `npx` fetch whatever was published last, and update it on purpose.
+
+Keep the viewer running (`npx @acertijosapps/electron-viewer@1.0.0`) to watch what the agent does. Without
 it, the MCP drives the app over CDP directly. Apps launched by either one are visible to the other.
 
 | Tool | What it does |
@@ -127,7 +130,7 @@ Add the viewer to `.claude/launch.json` and open it with `preview_start electron
     {
       "name": "electron-viewer",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["-y", "@acertijosapps/electron-viewer"],
+      "runtimeArgs": ["-y", "@acertijosapps/electron-viewer@1.0.0"],
       "port": 8094,
       "autoPort": false
     }
