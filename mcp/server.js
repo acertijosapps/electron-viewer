@@ -88,7 +88,7 @@ server.registerTool(
     const { result: apps, via } = await run('windows', 'GET', '/api/windows');
     return text({
       apps,
-      viewer: via === 'viewer' ? VIEWER_URL : 'not running (start it with `npx @acertijosapps/electron-viewer`)',
+      viewer: via === 'viewer' ? VIEWER_URL : `not running (start it with \`npx @acertijosapps/electron-viewer@${version}\`)`,
     });
   },
 );
