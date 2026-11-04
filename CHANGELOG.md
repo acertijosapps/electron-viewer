@@ -6,6 +6,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/); version
 ## [Sin liberar]
 
 ### Añadido
+- El inspector del proceso main se descubre solo: para una app arrancada a mano con `--remote-debugging-port` e `--inspect`, se buscan inspectores en 9229–9238 y se emparejan con su app preguntándole a cada uno (solo lectura) en qué puerto CDP escucha. Antes había que reiniciar el visor con `--attach` e `--inspect` para tener `main: true`.
 - Tooltips propios en los controles del visor (lanzar, ventana, recargar, DevTools, tamaño y captura), porque el panel de navegador de Claude no muestra los de `title`. Salen al pasar el puntero o al enfocar con el teclado, también en botones deshabilitados.
 
 ### Cambiado
