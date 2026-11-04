@@ -6,6 +6,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/); version
 ## [Sin liberar]
 
 ### Añadido
+- Tooltips propios en los controles del visor (lanzar, ventana, recargar, DevTools, tamaño, marco y captura), porque el panel de navegador de Claude no muestra los de `title`. Salen al pasar el puntero o al enfocar con el teclado, también en botones deshabilitados (el de marco explica por qué lo está).
 
 ### Cambiado
 

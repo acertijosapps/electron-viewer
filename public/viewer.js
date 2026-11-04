@@ -104,6 +104,9 @@ function onJson(msg) {
     meta = msg;
     frameButton.setAttribute('aria-pressed', String(Boolean(msg.frame)));
     frameButton.disabled = !msg.app?.main;
+    frameButton.dataset.tip = msg.app?.main
+      ? `${msg.frame ? 'Hide' : 'Show'} the native window frame`
+      : 'Native frame needs the main process: launch the app from here or attach with --inspect';
     canvas.classList.toggle('native', Boolean(msg.frame));
     sizeSelect.options[0].textContent = `Window size (${msg.width} × ${msg.height})`;
     renderStatus();
@@ -164,7 +167,7 @@ function renderLaunch() {
   launchTop.hidden = !project?.launchable;
   launchTop.disabled = !can;
   launchTop.textContent = launching ? 'Launching…' : `Launch ${project?.name ?? 'app'}`;
-  launchTop.title = project ? `electron . in ${project.dir}` : '';
+  launchTop.dataset.tip = project ? `Run electron . in ${project.dir}` : '';
   launchButton.textContent = launchTop.textContent;
 }
 
@@ -429,6 +432,43 @@ keys.addEventListener('compositionend', () => {
   if (keys.value) send({ type: 'text', text: keys.value });
   keys.value = '';
 });
+
+// ---------- Tooltips ----------
+// Uno solo, colocado junto al control bajo el puntero o con el foco del teclado. Se usa
+// pointerover en el documento porque los botones deshabilitados no reciben eventos propios.
+
+const tip = $('#tip');
+let tipFor = null;
+
+function showTip(el) {
+  const text = el?.dataset.tip;
+  if (!text) return hideTip();
+  tipFor = el;
+  tip.textContent = text;
+  tip.hidden = false;
+  const r = el.getBoundingClientRect();
+  const t = tip.getBoundingClientRect();
+  const gap = 6;
+  // Debajo si cabe (barra de arriba), si no encima (controles de abajo).
+  const top = r.bottom + gap + t.height <= innerHeight ? r.bottom + gap : r.top - gap - t.height;
+  const left = Math.min(innerWidth - t.width - 8, Math.max(8, r.left + r.width / 2 - t.width / 2));
+  tip.style.top = `${Math.max(8, top)}px`;
+  tip.style.left = `${left}px`;
+}
+
+function hideTip() {
+  tipFor = null;
+  tip.hidden = true;
+}
+
+document.addEventListener('pointerover', (e) => {
+  const el = e.target.closest?.('[data-tip]');
+  if (el !== tipFor) el ? showTip(el) : hideTip();
+});
+document.addEventListener('pointerdown', hideTip);
+document.addEventListener('focusin', (e) => (e.target.matches?.(':focus-visible') ? showTip(e.target.closest('[data-tip]')) : hideTip()));
+document.addEventListener('focusout', hideTip);
+addEventListener('blur', hideTip);
 
 setControlsEnabled(false);
 await loadProject();
