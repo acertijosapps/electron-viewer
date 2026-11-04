@@ -4,7 +4,7 @@ Live viewer for Electron apps in the browser, plus an MCP server so an AI agent 
 Built for the browser pane of AI coding tools (such as Claude Code): you and the agent watch and
 control the same app window, in real time.
 
-<img src="https://unpkg.com/@acertijosapps/electron-viewer/media/viewer.jpg" width="560" alt="Electron Viewer showing the example app: window selector and launch button on top, the live window in the middle, and the reload, DevTools, window size and screenshot controls at the bottom" />
+<img src="https://unpkg.com/@acertijosapps/electron-viewer/media/viewer.jpg" width="560" alt="Electron Viewer showing the example app: window selector and launch button on top, the live window in the middle, and the reload, DevTools, window size, touch and screenshot controls at the bottom" />
 
 - **Live video**: `Page.startScreencast` from the Chrome DevTools Protocol (CDP) over WebSocket. It keeps
   streaming while the app window is covered or minimized.
