@@ -10,6 +10,8 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/); version
 ### Cambiado
 
 ### Corregido
+- La API HTTP valida los parámetros con esquemas zod por ruta (`lib/schemas.js`), con los mismos límites que las herramientas del MCP pero con los nombres de campo de la API. Un campo que falta, que no existe o que está fuera de rango responde `400` con un mensaje que lo nombra y lista los campos válidos, por ejemplo `POST /api/swipe: missing x1, y1, x2, y2; unknown fromX, fromY, toX, toY`; antes llegaba a CDP y respondía `Input.dispatchTouchEvent: Invalid parameters`. Un cuerpo JSON que no es un objeto también responde `400`.
+- El README dice en Limitaciones que el modo marco de la 1.0.0 se quitó en la 1.1.0, y por qué.
 
 ### Eliminado
 
