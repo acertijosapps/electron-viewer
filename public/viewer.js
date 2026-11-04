@@ -159,7 +159,7 @@ function renderLaunch() {
   launchTop.hidden = !project?.launchable;
   launchTop.disabled = !can;
   launchTop.textContent = launching ? 'Launching…' : `Launch ${project?.name ?? 'app'}`;
-  launchTop.dataset.tip = project ? `Run electron . in ${project.dir}` : '';
+  launchTop.dataset.tip = project ? `Run ${project.command} in ${project.dir}` : '';
   launchButton.textContent = launchTop.textContent;
 }
 
