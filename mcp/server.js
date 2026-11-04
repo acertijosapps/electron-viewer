@@ -253,14 +253,17 @@ server.registerTool(
     title: 'Resize window',
     description:
       'Sets the size of the window content area in CSS px. With the main process it resizes the real window; ' +
-      'without it, it emulates the viewport. Width and height 0 restore the window size.',
+      'if the window cannot reach that size (smaller screen, kiosk, full screen), without the main process or with ' +
+      'emulate=true, the page viewport is emulated at the exact size instead. Width and height 0 restore the window size.',
     inputSchema: {
       width: z.number().int().min(0).max(8000).describe('Content width in CSS px'),
       height: z.number().int().min(0).max(8000).describe('Content height in CSS px'),
+      emulate: z.boolean().optional().describe('Emulate the viewport without touching the real window'),
       window: windowArg,
     },
   },
-  async ({ width, height, window }) => text((await run('resize', 'POST', '/api/resize', { window, width, height })).result),
+  async ({ width, height, emulate, window }) =>
+    text((await run('resize', 'POST', '/api/resize', { window, width, height, emulate })).result),
 );
 
 server.registerTool(

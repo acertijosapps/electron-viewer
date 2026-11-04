@@ -10,6 +10,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/); version
 - Tooltips propios en los controles del visor (lanzar, ventana, recargar, DevTools, tamaño y captura), porque el panel de navegador de Claude no muestra los de `title`. Salen al pasar el puntero o al enfocar con el teclado, también en botones deshabilitados.
 
 ### Cambiado
+- `resize_window` y el selector de tamaño: si la ventana real no llega al tamaño pedido (pantalla más chica, `kiosk`, pantalla completa), la página se emula con el viewport exacto (`Emulation.setDeviceMetricsOverride`) y la respuesta lo explica en `note`. `emulate: true` lo fuerza sin tocar la ventana. El selector suma 1920 × 1080 y 1080 × 1920.
 - Los ejemplos del README (`npx`, `claude mcp add`, configuración MCP y `launch.json`) fijan la versión exacta, para no ejecutar sin querer lo último publicado; `npm run check` comprueba que coincida con `package.json`.
 
 ### Corregido

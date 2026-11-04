@@ -269,7 +269,8 @@ $('#devtools').onclick = async () => {
 sizeSelect.onchange = async () => {
   const [width, height] = sizeSelect.value ? sizeSelect.value.split('x').map(Number) : [0, 0];
   sizeSelect.value = '';
-  await control('resize', { width, height });
+  const result = await control('resize', { width, height });
+  if (result?.note) renderStatus(result.note);
 };
 
 $('#screenshot').onclick = async () => {
