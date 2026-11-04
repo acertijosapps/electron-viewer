@@ -44,9 +44,10 @@ yourself and the viewer finds it:
 electron --remote-debugging-port=9222 --inspect=9229 .
 ```
 
-`--inspect` is optional; without it you get everything except the main-process features
-(`evaluate_main`, real window resizing and in-app DevTools). To attach on another
-port, use the form in the viewer or `--attach`.
+Apps on CDP ports 9222–9231 are found automatically, and so is their main process when its inspector is
+on 9229–9238. `--inspect` is optional; without it you get everything except the main-process features
+(`evaluate_main`, real window resizing and in-app DevTools). To attach on other ports, use the form in
+the viewer or `--attach` and `--inspect`.
 
 ```text
 electron-viewer [options]        Start the viewer
@@ -180,6 +181,9 @@ the query string or the body and is optional with a single window. The server on
   editing commands, because the native menu that normally handles them never sees CDP events.
 - Each process keeps one connection per window and per main process, which also collects console
   messages and exceptions (the last 1000 per app).
+- For an app with no known inspector, each Node inspector on ports 9229–9238 is asked once, read only,
+  whether it is Electron and which CDP port its app listens on. Any other Node process started with
+  `--inspect` in that range gets one short connection (it logs `Debugger attached.`) and is left alone.
 - Launched and attached apps are remembered in `~/.cache/electron-viewer`, so the viewer and the MCP see
   the same apps. Launched apps write their output to a log file there and keep running if the viewer
   or MCP exits.
