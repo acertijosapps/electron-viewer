@@ -8,12 +8,12 @@
     "source": "github"
   },
   "websiteUrl": "https://github.com/acertijosapps/electron-viewer#readme",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@acertijosapps/electron-viewer",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"

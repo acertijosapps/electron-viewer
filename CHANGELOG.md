@@ -6,19 +6,27 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/); version
 ## [Sin liberar]
 
 ### Añadido
+
+### Cambiado
+
+### Corregido
+
+### Eliminado
+
+## [1.1.0] - 2026-11-03
+
+### Añadido
 - Touch: modo touch en el visor (el puntero se manda como un dedo con `Input.dispatchTouchEvent`, recordado en el navegador) y herramientas MCP `tap`, `swipe`, `long_press` y `pinch` (con `POST /api/tap`, `/swipe`, `/long-press` y `/pinch`). La primera acción touch activa la emulación de touch de la ventana (`maxTouchPoints` 5, `pointer: coarse`). La app de ejemplo registra long press, pinch y arrastre táctil.
 - `--launch-cmd` (y `ELECTRON_VIEWER_LAUNCH_CMD`): comando de arranque propio para el botón Launch y `launch_app`, como `yarn dev` en electron-vite, con `{cdpPort}` e `{inspectPort}` reemplazados por los puertos libres. Solo se lee de la CLI o el entorno, nunca de la API ni del MCP; tiene 120 s para abrir el puerto CDP, y si no, se termina su grupo de procesos.
 - El inspector del proceso main se descubre solo: para una app arrancada a mano con `--remote-debugging-port` e `--inspect`, se buscan inspectores en 9229–9238 y se emparejan con su app preguntándole a cada uno (solo lectura) en qué puerto CDP escucha. Antes había que reiniciar el visor con `--attach` e `--inspect` para tener `main: true`.
-- Tooltips propios en los controles del visor (lanzar, ventana, recargar, DevTools, tamaño y captura), porque el panel de navegador de Claude no muestra los de `title`. Salen al pasar el puntero o al enfocar con el teclado, también en botones deshabilitados.
+- Tooltips propios en los controles del visor (lanzar, ventana, recargar, DevTools, tamaño, touch y captura), porque el panel de navegador de Claude no muestra los de `title`. Salen al pasar el puntero o al enfocar con el teclado, también en botones deshabilitados.
 
 ### Cambiado
 - `resize_window` y el selector de tamaño: si la ventana real no llega al tamaño pedido (pantalla más chica, `kiosk`, pantalla completa), la página se emula con el viewport exacto (`Emulation.setDeviceMetricsOverride`) y la respuesta lo explica en `note`. `emulate: true` lo fuerza sin tocar la ventana. El selector suma 1920 × 1080 y 1080 × 1920.
 - Los ejemplos del README (`npx`, `claude mcp add`, configuración MCP y `launch.json`) fijan la versión exacta, para no ejecutar sin querer lo último publicado; `npm run check` comprueba que coincida con `package.json`.
 
-### Corregido
-
 ### Eliminado
-- Modo marco del visor y `frame` de `screenshot` (MCP y `GET /api/screenshot`). Recortaba la pantalla en el área de la ventana, así que también capturaba cualquier otra ventana que la tapara y la mandaba al visor o al agente; los menús contextuales nativos, además, no salían. Capturar solo la ventana con su marco no es posible desde Electron en macOS (`desktopCapturer` no lista las ventanas de la propia app), así que se quita.
+- Modo marco del visor y `frame` de `screenshot` (MCP y `GET /api/screenshot`). Recortaba la pantalla en el área de la ventana, así que también capturaba cualquier otra ventana que la tapara y la mandaba al visor o al agente; los menús contextuales nativos, además, no salían. Capturar solo la ventana con su marco no es posible desde Electron en macOS (`desktopCapturer` no lista las ventanas de la propia app), así que se quita. Es un cambio incompatible que sale en una versión menor por ser un arreglo de seguridad sobre una 1.0.0 de un día.
 
 ## [1.0.0] - 2026-11-02
 
