@@ -109,7 +109,7 @@ it, the MCP drives the app over CDP directly. Apps launched by either one are vi
 | `scroll` | Mouse wheel at a point, deltas in CSS px |
 | `type_text` | Insert text into the focused element (any Unicode) |
 | `press_key` | Enter, Tab, Escape, arrows, F1–F12… or any character, with modifiers |
-| `resize_window` | Resize the content area (the real window with the main process, emulated without it) |
+| `resize_window` | Resize the content area: the real window with the main process, an emulated viewport when the window can't reach the size (or with `emulate: true`) |
 | `reload` | Reload the window's page |
 | `evaluate` | Run JavaScript in the window's page and return the value |
 | `evaluate_main` | Run JavaScript in the main process, with `require('electron')` available |
@@ -161,7 +161,7 @@ the query string or the body and is optional with a single window. The server on
 | `POST /api/scroll` | `{ x, y, dx, dy }` |
 | `POST /api/text` | `{ text }` |
 | `POST /api/key` | `{ key, modifiers? }` |
-| `POST /api/resize` | `{ width, height }` (0 × 0 restores the window size) |
+| `POST /api/resize` | `{ width, height, emulate? }` (0 × 0 restores the window size) |
 | `POST /api/reload` | `{ ignoreCache? }` |
 | `POST /api/evaluate` | `{ expression }` |
 | `POST /api/evaluate-main` | `{ expression, app? }` |
