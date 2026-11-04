@@ -22,7 +22,7 @@
     "start": "node bin/electron-viewer.js",
     "mcp": "node bin/electron-viewer.js mcp",
     "example": "node bin/electron-viewer.js --project example",
-    "check": "node --check bin/electron-viewer.js && node --check server.js && node --check lib/cdp.js && node --check lib/electron.js && node --check mcp/server.js && node --check public/viewer.js && node scripts/check-version.js",
+    "check": "node --check bin/electron-viewer.js && node --check server.js && node --check lib/cdp.js && node --check lib/electron.js && node --check lib/schemas.js && node --check mcp/server.js && node --check public/viewer.js && node scripts/check-version.js",
     "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "keywords": [
