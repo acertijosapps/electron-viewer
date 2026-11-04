@@ -10,7 +10,7 @@ const launchButton = $('#launch');
 const launchTop = $('#launch-top');
 const attachForm = $('#attach');
 const sizeSelect = $('#size');
-const frameButton = $('#frame');
+const touchButton = $('#touch');
 const controls = $('.controls');
 
 const TARGETS_REFRESH_MS = 3000;
@@ -96,15 +96,12 @@ function renderStatus(text) {
   }
   if (!meta || performance.now() < noteUntil) return;
   statusEl.title = '';
-  statusEl.textContent = `${meta.width}×${meta.height}${meta.frame ? ' · frame' : ''} · ${fps} fps`;
+  statusEl.textContent = `${meta.width}×${meta.height}${touchMode ? ' · touch' : ''} · ${fps} fps`;
 }
 
 function onJson(msg) {
   if (msg.type === 'meta') {
     meta = msg;
-    frameButton.setAttribute('aria-pressed', String(Boolean(msg.frame)));
-    frameButton.disabled = !msg.app?.main;
-    canvas.classList.toggle('native', Boolean(msg.frame));
     sizeSelect.options[0].textContent = `Window size (${msg.width} × ${msg.height})`;
     renderStatus();
   } else if (msg.type === 'error') {
@@ -130,7 +127,6 @@ function showMessage(text, { launch = false } = {}) {
 
 function setControlsEnabled(enabled) {
   controls.querySelectorAll('button, select').forEach((b) => (b.disabled = !enabled));
-  if (enabled) frameButton.disabled = !selected()?.app.main;
 }
 
 function disconnect() {
@@ -164,7 +160,7 @@ function renderLaunch() {
   launchTop.hidden = !project?.launchable;
   launchTop.disabled = !can;
   launchTop.textContent = launching ? 'Launching…' : `Launch ${project?.name ?? 'app'}`;
-  launchTop.title = project ? `electron . in ${project.dir}` : '';
+  launchTop.dataset.tip = project ? `Run ${project.command} in ${project.dir}` : '';
   launchButton.textContent = launchTop.textContent;
 }
 
@@ -274,16 +270,15 @@ $('#devtools').onclick = async () => {
 sizeSelect.onchange = async () => {
   const [width, height] = sizeSelect.value ? sizeSelect.value.split('x').map(Number) : [0, 0];
   sizeSelect.value = '';
-  await control('resize', { width, height });
+  const result = await control('resize', { width, height });
+  if (result?.note) renderStatus(result.note);
 };
-
-frameButton.onclick = () => send({ type: 'frame', on: !meta?.frame });
 
 $('#screenshot').onclick = async () => {
   if (!windowId) return;
   renderStatus('Saving screenshot…');
   try {
-    const res = await api('GET', `screenshot?window=${encodeURIComponent(windowId)}${meta?.frame ? '&frame=1' : ''}`);
+    const res = await api('GET', `screenshot?window=${encodeURIComponent(windowId)}`);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(await res.blob());
     const name = (selected()?.app.name || 'electron').replace(/[^\w.-]+/g, '-');
@@ -299,8 +294,7 @@ $('#screenshot').onclick = async () => {
 
 // ---------- Input ----------
 
-// Posición normalizada (0–1) dentro del contenido de la ventana, descontando el letterbox de
-// object-fit y, en modo marco, la barra de título y los bordes.
+// Posición normalizada (0–1) dentro del contenido de la ventana, descontando el letterbox de object-fit.
 function toNorm(e) {
   const r = canvas.getBoundingClientRect();
   const ar = canvas.width / canvas.height;
@@ -315,13 +309,8 @@ function toNorm(e) {
     h = w / ar;
     oy = (r.height - h) / 2;
   }
-  let x = (e.clientX - r.left - ox) / w;
-  let y = (e.clientY - r.top - oy) / h;
-  const c = meta?.frame && meta.content;
-  if (c) {
-    x = (x - c.x) / c.width;
-    y = (y - c.y) / c.height;
-  }
+  const x = (e.clientX - r.left - ox) / w;
+  const y = (e.clientY - r.top - oy) / h;
   return { x, y };
 }
 
@@ -334,6 +323,32 @@ function modifiersOf(e) {
 let lastDown = null;
 let pressed = false;
 
+// Modo touch: el puntero del visor se manda como un dedo (Input.dispatchTouchEvent). Se recuerda
+// en este navegador.
+let touchMode = false;
+try {
+  touchMode = localStorage.getItem('electron-viewer:touch') === '1';
+} catch {
+  // sin almacenamiento: empieza en mouse
+}
+
+function renderTouch() {
+  touchButton.setAttribute('aria-pressed', String(touchMode));
+  touchButton.dataset.tip = touchMode ? 'Touch mode on: the pointer is a finger. Click to use the mouse' : 'Send the pointer as touch (tap, swipe, long press)';
+  canvas.style.cursor = touchMode ? 'pointer' : '';
+  renderStatus();
+}
+
+touchButton.onclick = () => {
+  touchMode = !touchMode;
+  try {
+    localStorage.setItem('electron-viewer:touch', touchMode ? '1' : '0');
+  } catch {
+    // no se recuerda
+  }
+  renderTouch();
+};
+
 canvas.addEventListener('pointerdown', (e) => {
   if (!meta || !canvas.width) return;
   keys.focus({ preventScroll: true });
@@ -342,6 +357,11 @@ canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   canvas.setPointerCapture(e.pointerId);
   pressed = true;
+  if (touchMode) {
+    if (e.button === 0) send({ type: 'touch', action: 'start', ...p });
+    else pressed = false;
+    return;
+  }
   const button = BUTTONS[e.button] || 'left';
   const now = performance.now();
   const near = lastDown && Math.hypot(e.clientX - lastDown.cx, e.clientY - lastDown.cy) < DOUBLE_CLICK_SLOP_PX;
@@ -354,6 +374,10 @@ canvas.addEventListener('pointerup', (e) => {
   if (!pressed) return;
   pressed = false;
   const p = toNorm(e);
+  if (touchMode) {
+    send({ type: 'touch', action: 'end', ...p });
+    return;
+  }
   send({ type: 'mouse', action: 'up', x: p.x, y: p.y, button: BUTTONS[e.button] || 'left', buttons: e.buttons, clickCount: lastDown?.count || 1, modifiers: modifiersOf(e) });
 });
 
@@ -370,11 +394,19 @@ function flushMove() {
   moveEvent = null;
   if (!e) return;
   const p = toNorm(e);
+  if (touchMode) {
+    // Un dedo solo se mueve apoyado: sin hover.
+    if (pressed) send({ type: 'touch', action: 'move', ...p });
+    return;
+  }
   if (!pressed && !inside(p)) return;
   send({ type: 'mouse', action: 'move', ...p, buttons: e.buttons, modifiers: modifiersOf(e) });
 }
 
-canvas.addEventListener('pointercancel', () => (pressed = false));
+canvas.addEventListener('pointercancel', (e) => {
+  if (pressed && touchMode) send({ type: 'touch', action: 'cancel', ...toNorm(e) });
+  pressed = false;
+});
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
 let wheel = null;
@@ -430,6 +462,46 @@ keys.addEventListener('compositionend', () => {
   keys.value = '';
 });
 
+// ---------- Tooltips ----------
+// Uno solo, colocado junto al control bajo el puntero o con el foco del teclado. Se usa
+// pointerover en el documento porque los botones deshabilitados no reciben eventos propios.
+
+const tip = $('#tip');
+let tipFor = null;
+
+function showTip(el) {
+  const text = el?.dataset.tip;
+  if (!text) return hideTip();
+  tipFor = el;
+  tip.textContent = text;
+  tip.hidden = false;
+  const r = el.getBoundingClientRect();
+  const t = tip.getBoundingClientRect();
+  const gap = 6;
+  // Debajo si cabe (barra de arriba), si no encima (controles de abajo).
+  const top = r.bottom + gap + t.height <= innerHeight ? r.bottom + gap : r.top - gap - t.height;
+  const left = Math.min(innerWidth - t.width - 8, Math.max(8, r.left + r.width / 2 - t.width / 2));
+  tip.style.top = `${Math.max(8, top)}px`;
+  tip.style.left = `${left}px`;
+}
+
+function hideTip() {
+  tipFor = null;
+  tip.hidden = true;
+}
+
+document.addEventListener('pointerover', (e) => {
+  const el = e.target.closest?.('[data-tip]');
+  if (el !== tipFor) el ? showTip(el) : hideTip();
+});
+document.addEventListener('pointerdown', hideTip);
+document.addEventListener('focusin', (e) => (e.target.matches?.(':focus-visible') ? showTip(e.target.closest('[data-tip]')) : hideTip()));
+document.addEventListener('focusout', hideTip);
+addEventListener('blur', hideTip);
+// Con otro tamaño de página la posición ya no vale.
+addEventListener('resize', hideTip);
+
+renderTouch();
 setControlsEnabled(false);
 await loadProject();
 refreshTargets();

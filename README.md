@@ -4,17 +4,18 @@ Live viewer for Electron apps in the browser, plus an MCP server so an AI agent 
 Built for the browser pane of AI coding tools (such as Claude Code): you and the agent watch and
 control the same app window, in real time.
 
-<img src="https://unpkg.com/@acertijosapps/electron-viewer/media/viewer.jpg" width="560" alt="Electron Viewer showing the example app: window selector and launch button on top, the live window in the middle, and the reload, DevTools, window size, frame and screenshot controls at the bottom" />
+<img src="https://unpkg.com/@acertijosapps/electron-viewer/media/viewer.jpg" width="560" alt="Electron Viewer showing the example app: window selector and launch button on top, the live window in the middle, and the reload, DevTools, window size, touch and screenshot controls at the bottom" />
 
 - **Live video**: `Page.startScreencast` from the Chrome DevTools Protocol (CDP) over WebSocket. It keeps
   streaming while the app window is covered or minimized.
 - **Real input**: mouse move and hover, click, double click, right click, drag, wheel and full keyboard
   passthrough (including ⌘C/⌘V/⌘A on macOS, IME and dictation).
+- **Touch**: a touch mode in the viewer turns the pointer into a finger, and the agent can tap, swipe,
+  long press and pinch, for touch-first and kiosk apps.
 - **Every app and window**: launch your project with `electron .` from the viewer, or attach to any app
   started with `--remote-debugging-port`. Apps on ports 9222–9231 are found automatically.
 - **Main process too**: launched apps also expose their main process (Node inspector), so the agent can
-  run code there, resize the real window, open DevTools and capture the native frame.
-- **Native frame capture**: title bar, context menus and dialogs on top of the window.
+  run code there, resize the real window and open DevTools.
 - **MCP server**: the same actions as tools, plus JavaScript in the renderer and main process, the
   accessibility tree with click-ready coordinates, and console logs.
 - **Nothing to add to your app**: no preload, no dependency, no code changes.
@@ -32,28 +33,42 @@ control the same app window, in real time.
 From your Electron project folder:
 
 ```sh
-npx @acertijosapps/electron-viewer
+npx @acertijosapps/electron-viewer@1.1.0
 ```
 
 Open <http://localhost:8094> and click **Launch**. The viewer runs `electron .` on free debugging
 ports (CDP from 9222, Node inspector from 9229). Deep link to a window: `?window=<target id>`.
 
-If your app is started by another tool (Electron Forge, electron-vite, a custom script), pass the flags
-yourself and the viewer finds it:
+If your app is started by another tool (electron-vite, Electron Forge, a custom script), give the viewer
+your own start command. `{cdpPort}` and `{inspectPort}` are replaced with free debugging ports, and the
+Launch button (and `launch_app`) runs it in the project folder:
+
+```sh
+npx @acertijosapps/electron-viewer@1.1.0 --launch-cmd "yarn dev --remoteDebuggingPort {cdpPort} --inspect {inspectPort}"
+```
+
+That line is for electron-vite; for an npm script that ends in `electron .`, pass the flags after `--`:
+`--launch-cmd "npm start -- --remote-debugging-port={cdpPort} --inspect={inspectPort}"`. The command is
+only read from the command line or `ELECTRON_VIEWER_LAUNCH_CMD`, never from the HTTP API or the MCP.
+
+Or start the app yourself with the flags and the viewer finds it:
 
 ```sh
 electron --remote-debugging-port=9222 --inspect=9229 .
 ```
 
-`--inspect` is optional; without it you get everything except the main-process features
-(`evaluate_main`, frame capture, real window resizing and in-app DevTools). To attach on another
-port, use the form in the viewer or `--attach`.
+Apps on CDP ports 9222–9231 are found automatically, and so is their main process when its inspector is
+on 9229–9238. `--inspect` is optional; without it you get everything except the main-process features
+(`evaluate_main`, real window resizing and in-app DevTools). To attach on other ports, use the form in
+the viewer or `--attach` and `--inspect`.
 
 ```text
 electron-viewer [options]        Start the viewer
 electron-viewer mcp [options]    Start the MCP server on stdio
 
       --project <dir>      Project to launch with "electron ." (default: current folder)
+      --launch-cmd <cmd>   Launch with this shell command instead; {cdpPort} and {inspectPort}
+                           are replaced with the debugging ports
   -p, --port <port>        Viewer port (default 8094, env PORT)
       --host <host>        Interface to bind (default 127.0.0.1, env HOST)
       --attach <port>      Attach at startup to an app on this CDP port
@@ -72,7 +87,7 @@ Other environment variables: `MAX_DIM` (longest side of the streamed frames, def
 Claude Code:
 
 ```sh
-claude mcp add electron-viewer -- npx -y @acertijosapps/electron-viewer mcp
+claude mcp add electron-viewer -- npx -y @acertijosapps/electron-viewer@1.1.0 mcp
 ```
 
 Any other MCP client:
@@ -82,7 +97,7 @@ Any other MCP client:
   "mcpServers": {
     "electron-viewer": {
       "command": "npx",
-      "args": ["-y", "@acertijosapps/electron-viewer", "mcp"]
+      "args": ["-y", "@acertijosapps/electron-viewer@1.1.0", "mcp"]
     }
   }
 }
@@ -91,7 +106,10 @@ Any other MCP client:
 Also listed in the [official MCP Registry](https://registry.modelcontextprotocol.io) as
 `io.github.acertijosapps/electron-viewer`.
 
-Keep the viewer running (`npx @acertijosapps/electron-viewer`) to watch what the agent does. Without
+The examples pin an exact version. The viewer and the MCP can run code in your app, so pin the version
+you reviewed instead of letting `npx` fetch whatever was published last, and update it on purpose.
+
+Keep the viewer running (`npx @acertijosapps/electron-viewer@1.1.0`) to watch what the agent does. Without
 it, the MCP drives the app over CDP directly. Apps launched by either one are visible to the other.
 
 | Tool | What it does |
@@ -99,14 +117,18 @@ it, the MCP drives the app over CDP directly. Apps launched by either one are vi
 | `list_windows` | Running apps (with `main` when the main process is reachable) and their windows |
 | `launch_app` | Run `electron .` in the project on free debugging ports and wait for the first window |
 | `attach` | Attach to an app on a CDP port, optionally with its inspector port |
-| `screenshot` | PNG of the window content, longest side ≤ 1024 px; `frame: true` adds the native frame, menus and dialogs |
+| `screenshot` | PNG of the window content, longest side ≤ 1024 px |
 | `click` | Left, right or middle click; `count: 2` for a double click; optional modifiers |
 | `drag` | Press, move in steps and release: a real drag |
 | `hover` | Move the mouse without clicking |
+| `tap` | One-finger tap (touch events, `pointerType: "touch"`) |
+| `swipe` | One-finger swipe: scrolls touch lists and drives swipe gestures |
+| `long_press` | Hold one finger down for a while, 800 ms by default |
+| `pinch` | Two-finger pinch around a point; `scale` > 1 zooms in, < 1 zooms out |
 | `scroll` | Mouse wheel at a point, deltas in CSS px |
 | `type_text` | Insert text into the focused element (any Unicode) |
 | `press_key` | Enter, Tab, Escape, arrows, F1–F12… or any character, with modifiers |
-| `resize_window` | Resize the content area (the real window with the main process, emulated without it) |
+| `resize_window` | Resize the content area: the real window with the main process, an emulated viewport when the window can't reach the size (or with `emulate: true`) |
 | `reload` | Reload the window's page |
 | `evaluate` | Run JavaScript in the window's page and return the value |
 | `evaluate_main` | Run JavaScript in the main process, with `require('electron')` available |
@@ -128,26 +150,13 @@ Add the viewer to `.claude/launch.json` and open it with `preview_start electron
     {
       "name": "electron-viewer",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["-y", "@acertijosapps/electron-viewer"],
+      "runtimeArgs": ["-y", "@acertijosapps/electron-viewer@1.1.0"],
       "port": 8094,
       "autoPort": false
     }
   ]
 }
 ```
-
-## Native frame capture
-
-The **frame** button (and `screenshot` with `frame: true`) captures the screen area of the window from
-the main process with `desktopCapturer`: the title bar, native context menus and dialogs on top of the
-window show up, at a few frames per second. Anything else covering the window shows up too, and the
-macOS menu bar at the top of the screen is not included. In frame mode, clicks on the content still
-work; the title bar and native menus can't be clicked from the viewer.
-
-On macOS the app needs the **Screen Recording** permission (System Settings › Privacy & Security ›
-Screen & System Audio Recording). For an app run with `electron .`, that is the `Electron.app` inside
-the project's `node_modules/electron/dist`; the error message gives the exact path. Restart the app
-after allowing it.
 
 ## HTTP API
 
@@ -160,7 +169,7 @@ the query string or the body and is optional with a single window. The server on
 | --- | --- |
 | `GET /api/windows` | `[{ id, name, cdpPort, inspectPort, main, windows: [{ id, title, url }] }]` |
 | `GET /api/project` | The project the viewer launches and whether it has Electron installed |
-| `GET /api/screenshot?max=<px>&frame=1` | PNG; viewport size in `X-Viewport-Width` / `X-Viewport-Height` |
+| `GET /api/screenshot?max=<px>` | PNG; viewport size in `X-Viewport-Width` / `X-Viewport-Height` |
 | `GET /api/ax-tree?interactiveOnly=true` | `{ tree }` |
 | `GET /api/logs?level=&source=&limit=` | `{ logs }` or `{ stdout }` |
 | `POST /api/launch` | `{ project? }` |
@@ -168,10 +177,14 @@ the query string or the body and is optional with a single window. The server on
 | `POST /api/click` | `{ x, y, button?, count?, modifiers? }` |
 | `POST /api/drag` | `{ x1, y1, x2, y2, ms? }` |
 | `POST /api/hover` | `{ x, y }` |
+| `POST /api/tap` | `{ x, y }` |
+| `POST /api/swipe` | `{ x1, y1, x2, y2, ms? }` |
+| `POST /api/long-press` | `{ x, y, ms? }` |
+| `POST /api/pinch` | `{ x?, y?, scale, ms? }` |
 | `POST /api/scroll` | `{ x, y, dx, dy }` |
 | `POST /api/text` | `{ text }` |
 | `POST /api/key` | `{ key, modifiers? }` |
-| `POST /api/resize` | `{ width, height }` (0 × 0 restores the window size) |
+| `POST /api/resize` | `{ width, height, emulate? }` (0 × 0 restores the window size) |
 | `POST /api/reload` | `{ ignoreCache? }` |
 | `POST /api/evaluate` | `{ expression }` |
 | `POST /api/evaluate-main` | `{ expression, app? }` |
@@ -189,24 +202,32 @@ the query string or the body and is optional with a single window. The server on
   textarea holds the focus: keys are sent with `Input.dispatchKeyEvent`, and text that arrives without
   key events (IME, dictation) with `Input.insertText`. On macOS, ⌘A, ⌘C, ⌘V, ⌘X and ⌘Z are sent as
   editing commands, because the native menu that normally handles them never sees CDP events.
+- Touch goes through `Input.dispatchTouchEvent`. The first touch action on a window also turns on touch
+  emulation (`navigator.maxTouchPoints` 5, `pointer: coarse`) until the viewer or MCP that sent it exits.
 - Each process keeps one connection per window and per main process, which also collects console
   messages and exceptions (the last 1000 per app).
+- For an app with no known inspector, each Node inspector on ports 9229–9238 is asked once, read only,
+  whether it is Electron and which CDP port its app listens on. Any other Node process started with
+  `--inspect` in that range gets one short connection (it logs `Debugger attached.`) and is left alone.
 - Launched and attached apps are remembered in `~/.cache/electron-viewer`, so the viewer and the MCP see
   the same apps. Launched apps write their output to a log file there and keep running if the viewer
   or MCP exits.
 
 ## Limitations
 
-- CDP only sees web content. Native UI (title bar, menus, dialogs, tray, notifications) is visible only
-  in frame mode and can't be clicked; use `evaluate_main` to drive it from the main process.
-- Synchronous dialogs (`dialog.showMessageBoxSync`) block the main process: `evaluate_main` and frame
-  capture wait until the dialog is closed.
+- CDP only sees web content. Native UI (title bar, menus, dialogs, tray, notifications) isn't shown or
+  clickable; use `evaluate_main` to drive it from the main process. Capturing it would mean capturing the
+  screen, and with it any other window on top of the app, so the viewer doesn't.
+- Synchronous dialogs (`dialog.showMessageBoxSync`) block the main process: `evaluate_main` waits until
+  the dialog is closed.
 - Each `WebContentsView` is a separate CDP target, so it is listed as its own window. `<webview>` tags are
   not listed.
+- A long press reaches the app as a held touch, so apps that time `touchstart` themselves see it, but
+  Chromium on desktop doesn't turn it into a context menu. The viewer's touch mode is one finger; use
+  `pinch` for two.
 - No audio.
-- Frame mode runs at a few frames per second and, on macOS, needs the Screen Recording permission.
-- Apps that build before starting (Forge, electron-vite) can't be launched from the viewer; start them
-  with the debugging flags and they are picked up.
+- A `--launch-cmd` must pass the ports on to Electron; how depends on the tool. Launched apps keep running
+  when the viewer exits; close them from the app (or its terminal).
 
 ## Contributing
 

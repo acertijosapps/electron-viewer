@@ -40,7 +40,6 @@ async function viewer(method, route, params = {}) {
   }
   const type = res.headers.get('content-type') || '';
   if (!type.startsWith('image/')) return res.json();
-  const content = res.headers.get('x-content');
   const vw = res.headers.get('x-viewport-width');
   return {
     data: Buffer.from(await res.arrayBuffer()),
@@ -49,7 +48,6 @@ async function viewer(method, route, params = {}) {
     height: Number(res.headers.get('x-image-height')),
     window: res.headers.get('x-window'),
     viewport: vw ? { width: Number(vw), height: Number(res.headers.get('x-viewport-height')) } : undefined,
-    content: content ? JSON.parse(content) : undefined,
   };
 }
 
@@ -82,7 +80,7 @@ server.registerTool(
     title: 'List windows',
     description:
       'Lists the running Electron apps (found on CDP ports 9222–9231, launched or attached) and their windows. ' +
-      'main=true means the main process is reachable (evaluate_main, frame screenshots, real window resizing). ' +
+      'main=true means the main process is reachable (evaluate_main, real window resizing). ' +
       'Includes the viewer URL to watch a window live in a browser pane.',
     annotations: { readOnlyHint: true },
   },
@@ -90,7 +88,7 @@ server.registerTool(
     const { result: apps, via } = await run('windows', 'GET', '/api/windows');
     return text({
       apps,
-      viewer: via === 'viewer' ? VIEWER_URL : 'not running (start it with `npx @acertijosapps/electron-viewer`)',
+      viewer: via === 'viewer' ? VIEWER_URL : `not running (start it with \`npx @acertijosapps/electron-viewer@${version}\`)`,
     });
   },
 );
@@ -100,8 +98,9 @@ server.registerTool(
   {
     title: 'Launch app',
     description:
-      'Starts the Electron project with `electron .` (its own node_modules/electron) on free debugging ports, ' +
-      'so both the renderer (CDP) and the main process (Node inspector) are reachable. Waits for the first window.',
+      'Starts the Electron project on free debugging ports, so both the renderer (CDP) and the main process ' +
+      '(Node inspector) are reachable, and waits for the first window. It runs `electron .` with the project\'s own ' +
+      'Electron, or the launch command configured with --launch-cmd (e.g. a dev server).',
     inputSchema: {
       project: z.string().optional().describe('Project folder (default: the folder the viewer or MCP was started in)'),
     },
@@ -130,22 +129,15 @@ server.registerTool(
     title: 'Screenshot',
     description:
       'Captures the window content (PNG). For click, drag, hover and scroll use normalized coordinates: ' +
-      'x = pixel_x / image width, y = pixel_y / image height. With frame=true it captures the screen area of ' +
-      'the window instead, with its native title bar, menus and dialogs (needs main=true; on macOS the app needs ' +
-      'the Screen Recording permission); coordinates still refer to the content screenshot.',
+      'x = pixel_x / image width, y = pixel_y / image height. Native UI (title bar, menus, dialogs) is not included.',
     inputSchema: {
       window: windowArg,
-      frame: z.boolean().optional().describe('Include the native window frame, menus and dialogs'),
     },
     annotations: { readOnlyHint: true },
   },
-  async ({ window, frame }) => {
-    const { result: shot } = await run('screenshot', 'GET', '/api/screenshot', { window, max: SCREENSHOT_MAX, frame: frame ? 1 : undefined });
-    const c = shot.content;
-    const note = c
-      ? `Window with frame, ${shot.width}×${shot.height} px. Content area: x ${c.x.toFixed(3)}–${(c.x + c.width).toFixed(3)}, ` +
-        `y ${c.y.toFixed(3)}–${(c.y + c.height).toFixed(3)} of the image; click coordinates are normalized over the content only.`
-      : `Viewport is ${shot.viewport?.width}×${shot.viewport?.height} CSS px (image ${shot.width}×${shot.height}, longest side ≤ ${SCREENSHOT_MAX}).`;
+  async ({ window }) => {
+    const { result: shot } = await run('screenshot', 'GET', '/api/screenshot', { window, max: SCREENSHOT_MAX });
+    const note = `Viewport is ${shot.viewport?.width}×${shot.viewport?.height} CSS px (image ${shot.width}×${shot.height}, longest side ≤ ${SCREENSHOT_MAX}).`;
     return {
       content: [
         { type: 'image', data: shot.data.toString('base64'), mimeType: shot.mimeType },
@@ -210,6 +202,80 @@ server.registerTool(
 );
 
 server.registerTool(
+  'tap',
+  {
+    title: 'Tap',
+    description:
+      'Taps a point with one finger (Input.dispatchTouchEvent): the page gets touch and pointer events with ' +
+      'pointerType "touch". The first touch action turns on touch emulation for the window (maxTouchPoints, pointer: coarse).',
+    inputSchema: { x: coord('x coordinate'), y: coord('y coordinate'), window: windowArg },
+  },
+  async ({ x, y, window }) => {
+    await run('tap', 'POST', '/api/tap', { window, x, y });
+    return text(`tapped (${x.toFixed(3)}, ${y.toFixed(3)})`);
+  },
+);
+
+server.registerTool(
+  'swipe',
+  {
+    title: 'Swipe',
+    description: 'Swipes one finger from one point to another (touch events; use drag for the mouse). Scrolls touch lists and drives swipe gestures.',
+    inputSchema: {
+      x1: coord('Start x'),
+      y1: coord('Start y'),
+      x2: coord('End x'),
+      y2: coord('End y'),
+      duration_ms: z.number().int().min(50).max(10000).default(300).describe('Gesture duration in ms'),
+      window: windowArg,
+    },
+  },
+  async ({ x1, y1, x2, y2, duration_ms, window }) => {
+    await run('swipe', 'POST', '/api/swipe', { window, x1, y1, x2, y2, ms: duration_ms });
+    return text(`swiped (${x1.toFixed(3)}, ${y1.toFixed(3)}) → (${x2.toFixed(3)}, ${y2.toFixed(3)}) in ${duration_ms} ms`);
+  },
+);
+
+server.registerTool(
+  'long_press',
+  {
+    title: 'Long press',
+    description:
+      'Holds one finger on a point and releases it. Apps that time touchstart themselves see a long press; ' +
+      "Chromium on desktop doesn't turn it into a context menu.",
+    inputSchema: {
+      x: coord('x coordinate'),
+      y: coord('y coordinate'),
+      duration_ms: z.number().int().min(100).max(10000).default(800).describe('How long the finger stays down, in ms'),
+      window: windowArg,
+    },
+  },
+  async ({ x, y, duration_ms, window }) => {
+    await run('longPress', 'POST', '/api/long-press', { window, x, y, ms: duration_ms });
+    return text(`long-pressed (${x.toFixed(3)}, ${y.toFixed(3)}) for ${duration_ms} ms`);
+  },
+);
+
+server.registerTool(
+  'pinch',
+  {
+    title: 'Pinch',
+    description: 'Two-finger pinch centered on a point: scale > 1 spreads the fingers (zoom in), scale < 1 brings them together.',
+    inputSchema: {
+      x: coord('Center x').default(0.5),
+      y: coord('Center y').default(0.5),
+      scale: z.number().min(0.1).max(10).describe('Final finger distance ÷ initial distance, e.g. 2 or 0.5'),
+      duration_ms: z.number().int().min(100).max(10000).default(400).describe('Gesture duration in ms'),
+      window: windowArg,
+    },
+  },
+  async ({ x, y, scale, duration_ms, window }) => {
+    const { result } = await run('pinch', 'POST', '/api/pinch', { window, x, y, scale, ms: duration_ms });
+    return text(`pinched ×${result.scale} at (${x.toFixed(3)}, ${y.toFixed(3)})`);
+  },
+);
+
+server.registerTool(
   'scroll',
   {
     title: 'Scroll',
@@ -262,14 +328,17 @@ server.registerTool(
     title: 'Resize window',
     description:
       'Sets the size of the window content area in CSS px. With the main process it resizes the real window; ' +
-      'without it, it emulates the viewport. Width and height 0 restore the window size.',
+      'if the window cannot reach that size (smaller screen, kiosk, full screen), without the main process or with ' +
+      'emulate=true, the page viewport is emulated at the exact size instead. Width and height 0 restore the window size.',
     inputSchema: {
       width: z.number().int().min(0).max(8000).describe('Content width in CSS px'),
       height: z.number().int().min(0).max(8000).describe('Content height in CSS px'),
+      emulate: z.boolean().optional().describe('Emulate the viewport without touching the real window'),
       window: windowArg,
     },
   },
-  async ({ width, height, window }) => text((await run('resize', 'POST', '/api/resize', { window, width, height })).result),
+  async ({ width, height, emulate, window }) =>
+    text((await run('resize', 'POST', '/api/resize', { window, width, height, emulate })).result),
 );
 
 server.registerTool(

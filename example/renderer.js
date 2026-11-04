@@ -44,3 +44,23 @@ box.addEventListener('pointerdown', (e) => {
     log(`dropped at ${box.offsetLeft}, ${box.offsetTop}`);
   };
 });
+
+// Touch: long press propio (como en las apps touch-first) y pinch con dos dedos.
+const distance = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+let pressTimer = null;
+let pinch = null;
+window.addEventListener('touchstart', (e) => {
+  clearTimeout(pressTimer);
+  if (e.touches.length === 2) pinch = { start: distance(e.touches), scale: 1 };
+  else pressTimer = setTimeout(() => log('long press'), 600);
+});
+window.addEventListener('touchmove', (e) => {
+  clearTimeout(pressTimer);
+  if (pinch && e.touches.length === 2) pinch.scale = distance(e.touches) / pinch.start;
+});
+window.addEventListener('touchend', () => {
+  clearTimeout(pressTimer);
+  if (pinch) log(`pinch ${pinch.scale.toFixed(2)}×`);
+  pinch = null;
+});
+window.addEventListener('pointerdown', (e) => e.pointerType === 'touch' && console.log('touch at', Math.round(e.clientX), Math.round(e.clientY)));

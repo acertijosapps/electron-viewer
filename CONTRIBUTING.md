@@ -79,6 +79,6 @@ When opening a PR:
 
 1. Confirm gates are green on `beta`.
 2. Decide the SemVer bump from the commits since the last tag.
-3. Update `version` in `package.json` (`server.json` takes it from there when the MCP Registry workflow runs).
+3. Update `version` in `package.json` and `package-lock.json` (`server.json` takes it from there when the MCP Registry workflow runs), and the pinned version in the README examples. `npm run check` fails while they differ.
 4. Rename the `## [Sin liberar]` section of the changelog to `## [X.Y.Z] - YYYY-MM-DD` and open a fresh empty one.
 5. Tag `vX.Y.Z` on `main`.
