@@ -10,6 +10,7 @@ const launchButton = $('#launch');
 const launchTop = $('#launch-top');
 const attachForm = $('#attach');
 const sizeSelect = $('#size');
+const touchButton = $('#touch');
 const controls = $('.controls');
 
 const TARGETS_REFRESH_MS = 3000;
@@ -95,7 +96,7 @@ function renderStatus(text) {
   }
   if (!meta || performance.now() < noteUntil) return;
   statusEl.title = '';
-  statusEl.textContent = `${meta.width}×${meta.height} · ${fps} fps`;
+  statusEl.textContent = `${meta.width}×${meta.height}${touchMode ? ' · touch' : ''} · ${fps} fps`;
 }
 
 function onJson(msg) {
@@ -322,6 +323,32 @@ function modifiersOf(e) {
 let lastDown = null;
 let pressed = false;
 
+// Modo touch: el puntero del visor se manda como un dedo (Input.dispatchTouchEvent). Se recuerda
+// en este navegador.
+let touchMode = false;
+try {
+  touchMode = localStorage.getItem('electron-viewer:touch') === '1';
+} catch {
+  // sin almacenamiento: empieza en mouse
+}
+
+function renderTouch() {
+  touchButton.setAttribute('aria-pressed', String(touchMode));
+  touchButton.dataset.tip = touchMode ? 'Touch mode on: the pointer is a finger. Click to use the mouse' : 'Send the pointer as touch (tap, swipe, long press)';
+  canvas.style.cursor = touchMode ? 'pointer' : '';
+  renderStatus();
+}
+
+touchButton.onclick = () => {
+  touchMode = !touchMode;
+  try {
+    localStorage.setItem('electron-viewer:touch', touchMode ? '1' : '0');
+  } catch {
+    // no se recuerda
+  }
+  renderTouch();
+};
+
 canvas.addEventListener('pointerdown', (e) => {
   if (!meta || !canvas.width) return;
   keys.focus({ preventScroll: true });
@@ -330,6 +357,11 @@ canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   canvas.setPointerCapture(e.pointerId);
   pressed = true;
+  if (touchMode) {
+    if (e.button === 0) send({ type: 'touch', action: 'start', ...p });
+    else pressed = false;
+    return;
+  }
   const button = BUTTONS[e.button] || 'left';
   const now = performance.now();
   const near = lastDown && Math.hypot(e.clientX - lastDown.cx, e.clientY - lastDown.cy) < DOUBLE_CLICK_SLOP_PX;
@@ -342,6 +374,10 @@ canvas.addEventListener('pointerup', (e) => {
   if (!pressed) return;
   pressed = false;
   const p = toNorm(e);
+  if (touchMode) {
+    send({ type: 'touch', action: 'end', ...p });
+    return;
+  }
   send({ type: 'mouse', action: 'up', x: p.x, y: p.y, button: BUTTONS[e.button] || 'left', buttons: e.buttons, clickCount: lastDown?.count || 1, modifiers: modifiersOf(e) });
 });
 
@@ -358,11 +394,19 @@ function flushMove() {
   moveEvent = null;
   if (!e) return;
   const p = toNorm(e);
+  if (touchMode) {
+    // Un dedo solo se mueve apoyado: sin hover.
+    if (pressed) send({ type: 'touch', action: 'move', ...p });
+    return;
+  }
   if (!pressed && !inside(p)) return;
   send({ type: 'mouse', action: 'move', ...p, buttons: e.buttons, modifiers: modifiersOf(e) });
 }
 
-canvas.addEventListener('pointercancel', () => (pressed = false));
+canvas.addEventListener('pointercancel', (e) => {
+  if (pressed && touchMode) send({ type: 'touch', action: 'cancel', ...toNorm(e) });
+  pressed = false;
+});
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
 let wheel = null;
@@ -455,6 +499,7 @@ document.addEventListener('focusin', (e) => (e.target.matches?.(':focus-visible'
 document.addEventListener('focusout', hideTip);
 addEventListener('blur', hideTip);
 
+renderTouch();
 setControlsEnabled(false);
 await loadProject();
 refreshTargets();

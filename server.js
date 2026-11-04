@@ -11,6 +11,7 @@ import {
   attachApp,
   createActions,
   dispatchKey,
+  dispatchTouch,
   pageClient,
   projectInfo,
   resolveWindow,
@@ -48,6 +49,7 @@ class WindowSession {
     this.lastFrame = null;
     this.queue = Promise.resolve();
     this.pendingMove = null;
+    this.pendingTouch = null;
     this.onScreencast = (e) => this.handleScreencast(e);
     this.onClose = () => {
       log(this.app.name, this.id.slice(0, 8), 'window closed');
@@ -163,6 +165,7 @@ class WindowSession {
           this.enqueue(() => {
             const m = this.pendingMove;
             this.pendingMove = null;
+    this.pendingTouch = null;
             const pressed = Object.keys(BUTTON_BITS).find((b) => m.buttons & BUTTON_BITS[b]) || 'none';
             return this.page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: m.x, y: m.y, modifiers: m.modifiers, buttons: m.buttons, button: pressed });
           });
@@ -178,6 +181,26 @@ class WindowSession {
               modifiers,
             }),
           );
+        }
+        break;
+      }
+      case 'touch': {
+        // Un dedo, como el puntero del visor. Los movimientos se fusionan igual que los del mouse.
+        const p = this.point(msg);
+        const type = { start: 'touchStart', move: 'touchMove', end: 'touchEnd', cancel: 'touchCancel' }[msg.action];
+        if (!type) return;
+        if (type === 'touchMove') {
+          const queued = this.pendingTouch;
+          this.pendingTouch = p;
+          if (queued) return;
+          this.enqueue(() => {
+            const next = this.pendingTouch;
+            this.pendingTouch = null;
+            return dispatchTouch(this.page, 'touchMove', [next]);
+          });
+        } else {
+          this.pendingTouch = null;
+          this.enqueue(() => dispatchTouch(this.page, type, [p]));
         }
         break;
       }
@@ -226,6 +249,10 @@ const API = {
   'POST /api/click': actions.click,
   'POST /api/drag': actions.drag,
   'POST /api/hover': actions.hover,
+  'POST /api/tap': actions.tap,
+  'POST /api/swipe': actions.swipe,
+  'POST /api/long-press': actions.longPress,
+  'POST /api/pinch': actions.pinch,
   'POST /api/scroll': actions.scroll,
   'POST /api/text': actions.text,
   'POST /api/key': actions.key,

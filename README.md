@@ -10,6 +10,8 @@ control the same app window, in real time.
   streaming while the app window is covered or minimized.
 - **Real input**: mouse move and hover, click, double click, right click, drag, wheel and full keyboard
   passthrough (including ⌘C/⌘V/⌘A on macOS, IME and dictation).
+- **Touch**: a touch mode in the viewer turns the pointer into a finger, and the agent can tap, swipe,
+  long press and pinch, for touch-first and kiosk apps.
 - **Every app and window**: launch your project with `electron .` from the viewer, or attach to any app
   started with `--remote-debugging-port`. Apps on ports 9222–9231 are found automatically.
 - **Main process too**: launched apps also expose their main process (Node inspector), so the agent can
@@ -119,6 +121,10 @@ it, the MCP drives the app over CDP directly. Apps launched by either one are vi
 | `click` | Left, right or middle click; `count: 2` for a double click; optional modifiers |
 | `drag` | Press, move in steps and release: a real drag |
 | `hover` | Move the mouse without clicking |
+| `tap` | One-finger tap (touch events, `pointerType: "touch"`) |
+| `swipe` | One-finger swipe: scrolls touch lists and drives swipe gestures |
+| `long_press` | Hold one finger down for a while, 800 ms by default |
+| `pinch` | Two-finger pinch around a point; `scale` > 1 zooms in, < 1 zooms out |
 | `scroll` | Mouse wheel at a point, deltas in CSS px |
 | `type_text` | Insert text into the focused element (any Unicode) |
 | `press_key` | Enter, Tab, Escape, arrows, F1–F12… or any character, with modifiers |
@@ -171,6 +177,10 @@ the query string or the body and is optional with a single window. The server on
 | `POST /api/click` | `{ x, y, button?, count?, modifiers? }` |
 | `POST /api/drag` | `{ x1, y1, x2, y2, ms? }` |
 | `POST /api/hover` | `{ x, y }` |
+| `POST /api/tap` | `{ x, y }` |
+| `POST /api/swipe` | `{ x1, y1, x2, y2, ms? }` |
+| `POST /api/long-press` | `{ x, y, ms? }` |
+| `POST /api/pinch` | `{ x?, y?, scale, ms? }` |
 | `POST /api/scroll` | `{ x, y, dx, dy }` |
 | `POST /api/text` | `{ text }` |
 | `POST /api/key` | `{ key, modifiers? }` |
@@ -192,6 +202,8 @@ the query string or the body and is optional with a single window. The server on
   textarea holds the focus: keys are sent with `Input.dispatchKeyEvent`, and text that arrives without
   key events (IME, dictation) with `Input.insertText`. On macOS, ⌘A, ⌘C, ⌘V, ⌘X and ⌘Z are sent as
   editing commands, because the native menu that normally handles them never sees CDP events.
+- Touch goes through `Input.dispatchTouchEvent`. The first touch action on a window also turns on touch
+  emulation (`navigator.maxTouchPoints` 5, `pointer: coarse`) until the viewer or MCP that sent it exits.
 - Each process keeps one connection per window and per main process, which also collects console
   messages and exceptions (the last 1000 per app).
 - For an app with no known inspector, each Node inspector on ports 9229–9238 is asked once, read only,
@@ -210,6 +222,9 @@ the query string or the body and is optional with a single window. The server on
   the dialog is closed.
 - Each `WebContentsView` is a separate CDP target, so it is listed as its own window. `<webview>` tags are
   not listed.
+- A long press reaches the app as a held touch, so apps that time `touchstart` themselves see it, but
+  Chromium on desktop doesn't turn it into a context menu. The viewer's touch mode is one finger; use
+  `pinch` for two.
 - No audio.
 - A `--launch-cmd` must pass the ports on to Electron; how depends on the tool. Launched apps keep running
   when the viewer exits; close them from the app (or its terminal).

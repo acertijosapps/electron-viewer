@@ -202,6 +202,80 @@ server.registerTool(
 );
 
 server.registerTool(
+  'tap',
+  {
+    title: 'Tap',
+    description:
+      'Taps a point with one finger (Input.dispatchTouchEvent): the page gets touch and pointer events with ' +
+      'pointerType "touch". The first touch action turns on touch emulation for the window (maxTouchPoints, pointer: coarse).',
+    inputSchema: { x: coord('x coordinate'), y: coord('y coordinate'), window: windowArg },
+  },
+  async ({ x, y, window }) => {
+    await run('tap', 'POST', '/api/tap', { window, x, y });
+    return text(`tapped (${x.toFixed(3)}, ${y.toFixed(3)})`);
+  },
+);
+
+server.registerTool(
+  'swipe',
+  {
+    title: 'Swipe',
+    description: 'Swipes one finger from one point to another (touch events; use drag for the mouse). Scrolls touch lists and drives swipe gestures.',
+    inputSchema: {
+      x1: coord('Start x'),
+      y1: coord('Start y'),
+      x2: coord('End x'),
+      y2: coord('End y'),
+      duration_ms: z.number().int().min(50).max(10000).default(300).describe('Gesture duration in ms'),
+      window: windowArg,
+    },
+  },
+  async ({ x1, y1, x2, y2, duration_ms, window }) => {
+    await run('swipe', 'POST', '/api/swipe', { window, x1, y1, x2, y2, ms: duration_ms });
+    return text(`swiped (${x1.toFixed(3)}, ${y1.toFixed(3)}) → (${x2.toFixed(3)}, ${y2.toFixed(3)}) in ${duration_ms} ms`);
+  },
+);
+
+server.registerTool(
+  'long_press',
+  {
+    title: 'Long press',
+    description:
+      'Holds one finger on a point and releases it. Apps that time touchstart themselves see a long press; ' +
+      "Chromium on desktop doesn't turn it into a context menu.",
+    inputSchema: {
+      x: coord('x coordinate'),
+      y: coord('y coordinate'),
+      duration_ms: z.number().int().min(100).max(10000).default(800).describe('How long the finger stays down, in ms'),
+      window: windowArg,
+    },
+  },
+  async ({ x, y, duration_ms, window }) => {
+    await run('longPress', 'POST', '/api/long-press', { window, x, y, ms: duration_ms });
+    return text(`long-pressed (${x.toFixed(3)}, ${y.toFixed(3)}) for ${duration_ms} ms`);
+  },
+);
+
+server.registerTool(
+  'pinch',
+  {
+    title: 'Pinch',
+    description: 'Two-finger pinch centered on a point: scale > 1 spreads the fingers (zoom in), scale < 1 brings them together.',
+    inputSchema: {
+      x: coord('Center x').default(0.5),
+      y: coord('Center y').default(0.5),
+      scale: z.number().min(0.1).max(10).describe('Final finger distance ÷ initial distance, e.g. 2 or 0.5'),
+      duration_ms: z.number().int().min(100).max(10000).default(400).describe('Gesture duration in ms'),
+      window: windowArg,
+    },
+  },
+  async ({ x, y, scale, duration_ms, window }) => {
+    const { result } = await run('pinch', 'POST', '/api/pinch', { window, x, y, scale, ms: duration_ms });
+    return text(`pinched ×${result.scale} at (${x.toFixed(3)}, ${y.toFixed(3)})`);
+  },
+);
+
+server.registerTool(
   'scroll',
   {
     title: 'Scroll',
