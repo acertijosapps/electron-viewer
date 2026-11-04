@@ -98,8 +98,9 @@ server.registerTool(
   {
     title: 'Launch app',
     description:
-      'Starts the Electron project with `electron .` (its own node_modules/electron) on free debugging ports, ' +
-      'so both the renderer (CDP) and the main process (Node inspector) are reachable. Waits for the first window.',
+      'Starts the Electron project on free debugging ports, so both the renderer (CDP) and the main process ' +
+      '(Node inspector) are reachable, and waits for the first window. It runs `electron .` with the project\'s own ' +
+      'Electron, or the launch command configured with --launch-cmd (e.g. a dev server).',
     inputSchema: {
       project: z.string().optional().describe('Project folder (default: the folder the viewer or MCP was started in)'),
     },

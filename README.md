@@ -37,8 +37,19 @@ npx @acertijosapps/electron-viewer@1.0.0
 Open <http://localhost:8094> and click **Launch**. The viewer runs `electron .` on free debugging
 ports (CDP from 9222, Node inspector from 9229). Deep link to a window: `?window=<target id>`.
 
-If your app is started by another tool (Electron Forge, electron-vite, a custom script), pass the flags
-yourself and the viewer finds it:
+If your app is started by another tool (electron-vite, Electron Forge, a custom script), give the viewer
+your own start command. `{cdpPort}` and `{inspectPort}` are replaced with free debugging ports, and the
+Launch button (and `launch_app`) runs it in the project folder:
+
+```sh
+npx @acertijosapps/electron-viewer@1.0.0 --launch-cmd "yarn dev --remoteDebuggingPort {cdpPort} --inspect {inspectPort}"
+```
+
+That line is for electron-vite; for an npm script that ends in `electron .`, pass the flags after `--`:
+`--launch-cmd "npm start -- --remote-debugging-port={cdpPort} --inspect={inspectPort}"`. The command is
+only read from the command line or `ELECTRON_VIEWER_LAUNCH_CMD`, never from the HTTP API or the MCP.
+
+Or start the app yourself with the flags and the viewer finds it:
 
 ```sh
 electron --remote-debugging-port=9222 --inspect=9229 .
@@ -54,6 +65,8 @@ electron-viewer [options]        Start the viewer
 electron-viewer mcp [options]    Start the MCP server on stdio
 
       --project <dir>      Project to launch with "electron ." (default: current folder)
+      --launch-cmd <cmd>   Launch with this shell command instead; {cdpPort} and {inspectPort}
+                           are replaced with the debugging ports
   -p, --port <port>        Viewer port (default 8094, env PORT)
       --host <host>        Interface to bind (default 127.0.0.1, env HOST)
       --attach <port>      Attach at startup to an app on this CDP port
@@ -198,8 +211,8 @@ the query string or the body and is optional with a single window. The server on
 - Each `WebContentsView` is a separate CDP target, so it is listed as its own window. `<webview>` tags are
   not listed.
 - No audio.
-- Apps that build before starting (Forge, electron-vite) can't be launched from the viewer; start them
-  with the debugging flags and they are picked up.
+- A `--launch-cmd` must pass the ports on to Electron; how depends on the tool. Launched apps keep running
+  when the viewer exits; close them from the app (or its terminal).
 
 ## Contributing
 

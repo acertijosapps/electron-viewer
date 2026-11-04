@@ -17,6 +17,10 @@ Usage:
 Common options:
       --project <dir>      Electron project to launch with "electron ." (default:
                            current folder, env ELECTRON_VIEWER_PROJECT)
+      --launch-cmd <cmd>   Launch with this shell command instead (env
+                           ELECTRON_VIEWER_LAUNCH_CMD); {cdpPort} and {inspectPort}
+                           are replaced with the debugging ports, e.g.
+                           "yarn dev --remoteDebuggingPort {cdpPort} --inspect {inspectPort}"
 
 Viewer options:
   -p, --port <port>        Port to listen on (default: 8094, env PORT)
@@ -82,6 +86,12 @@ for (let i = 0; i < args.length; i++) {
     case '--project':
       process.env.ELECTRON_VIEWER_PROJECT = path.resolve(value());
       break;
+    case '--launch-cmd': {
+      const cmd = value();
+      if (!cmd.includes('{cdpPort}')) fail('--launch-cmd must include {cdpPort}');
+      process.env.ELECTRON_VIEWER_LAUNCH_CMD = cmd;
+      break;
+    }
     case '--attach':
       process.env.ELECTRON_VIEWER_ATTACH = portValue(flag, value());
       break;
