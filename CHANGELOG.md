@@ -6,6 +6,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/); version
 ## [Sin liberar]
 
 ### Añadido
+- Touch: modo touch en el visor (el puntero se manda como un dedo con `Input.dispatchTouchEvent`, recordado en el navegador) y herramientas MCP `tap`, `swipe`, `long_press` y `pinch` (con `POST /api/tap`, `/swipe`, `/long-press` y `/pinch`). La primera acción touch activa la emulación de touch de la ventana (`maxTouchPoints` 5, `pointer: coarse`). La app de ejemplo registra long press, pinch y arrastre táctil.
 - `--launch-cmd` (y `ELECTRON_VIEWER_LAUNCH_CMD`): comando de arranque propio para el botón Launch y `launch_app`, como `yarn dev` en electron-vite, con `{cdpPort}` e `{inspectPort}` reemplazados por los puertos libres. Solo se lee de la CLI o el entorno, nunca de la API ni del MCP; tiene 120 s para abrir el puerto CDP, y si no, se termina su grupo de procesos.
 - El inspector del proceso main se descubre solo: para una app arrancada a mano con `--remote-debugging-port` e `--inspect`, se buscan inspectores en 9229–9238 y se emparejan con su app preguntándole a cada uno (solo lectura) en qué puerto CDP escucha. Antes había que reiniciar el visor con `--attach` e `--inspect` para tener `main: true`.
 - Tooltips propios en los controles del visor (lanzar, ventana, recargar, DevTools, tamaño y captura), porque el panel de navegador de Claude no muestra los de `title`. Salen al pasar el puntero o al enfocar con el teclado, también en botones deshabilitados.
