@@ -33,7 +33,7 @@ control the same app window, in real time.
 From your Electron project folder:
 
 ```sh
-npx @acertijosapps/electron-viewer@1.1.0
+npx @acertijosapps/electron-viewer@1.1.1
 ```
 
 Open <http://localhost:8094> and click **Launch**. The viewer runs `electron .` on free debugging
@@ -44,7 +44,7 @@ your own start command. `{cdpPort}` and `{inspectPort}` are replaced with free d
 Launch button (and `launch_app`) runs it in the project folder:
 
 ```sh
-npx @acertijosapps/electron-viewer@1.1.0 --launch-cmd "yarn dev --remoteDebuggingPort {cdpPort} --inspect {inspectPort}"
+npx @acertijosapps/electron-viewer@1.1.1 --launch-cmd "yarn dev --remoteDebuggingPort {cdpPort} --inspect {inspectPort}"
 ```
 
 That line is for electron-vite; for an npm script that ends in `electron .`, pass the flags after `--`:
@@ -87,7 +87,7 @@ Other environment variables: `MAX_DIM` (longest side of the streamed frames, def
 Claude Code:
 
 ```sh
-claude mcp add electron-viewer -- npx -y @acertijosapps/electron-viewer@1.1.0 mcp
+claude mcp add electron-viewer -- npx -y @acertijosapps/electron-viewer@1.1.1 mcp
 ```
 
 Any other MCP client:
@@ -97,7 +97,7 @@ Any other MCP client:
   "mcpServers": {
     "electron-viewer": {
       "command": "npx",
-      "args": ["-y", "@acertijosapps/electron-viewer@1.1.0", "mcp"]
+      "args": ["-y", "@acertijosapps/electron-viewer@1.1.1", "mcp"]
     }
   }
 }
@@ -109,7 +109,7 @@ Also listed in the [official MCP Registry](https://registry.modelcontextprotocol
 The examples pin an exact version. The viewer and the MCP can run code in your app, so pin the version
 you reviewed instead of letting `npx` fetch whatever was published last, and update it on purpose.
 
-Keep the viewer running (`npx @acertijosapps/electron-viewer@1.1.0`) to watch what the agent does. Without
+Keep the viewer running (`npx @acertijosapps/electron-viewer@1.1.1`) to watch what the agent does. Without
 it, the MCP drives the app over CDP directly. Apps launched by either one are visible to the other.
 
 | Tool | What it does |
@@ -150,7 +150,7 @@ Add the viewer to `.claude/launch.json` and open it with `preview_start electron
     {
       "name": "electron-viewer",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["-y", "@acertijosapps/electron-viewer@1.1.0"],
+      "runtimeArgs": ["-y", "@acertijosapps/electron-viewer@1.1.1"],
       "port": 8094,
       "autoPort": false
     }
@@ -164,6 +164,11 @@ The MCP uses the viewer's API; you can call it too. `window` (target id or part 
 the query string or the body and is optional with a single window. The server only listens on
 127.0.0.1, only accepts a local `Host` and origin, and `POST` requests require
 `content-type: application/json`, so other websites can't drive your apps.
+
+Parameters are validated with the same limits as the MCP tools. A missing, unknown or out-of-range field
+gets a `400` that names it, e.g.
+`{"error": "POST /api/swipe: missing x1, y1, x2, y2; unknown fromX, fromY, toX, toY (fields: window, x1, y1, x2, y2, ms)"}`.
+Coordinates are normalized 0–1 and query string values are converted to numbers and booleans.
 
 | Endpoint | |
 | --- | --- |
@@ -217,7 +222,9 @@ the query string or the body and is optional with a single window. The server on
 
 - CDP only sees web content. Native UI (title bar, menus, dialogs, tray, notifications) isn't shown or
   clickable; use `evaluate_main` to drive it from the main process. Capturing it would mean capturing the
-  screen, and with it any other window on top of the app, so the viewer doesn't.
+  screen, and with it any other window on top of the app, so the viewer doesn't: the frame mode and
+  `screenshot` `frame` option of 1.0.0 were removed in 1.1.0 for that reason (see the
+  [CHANGELOG](./CHANGELOG.md)).
 - Synchronous dialogs (`dialog.showMessageBoxSync`) block the main process: `evaluate_main` waits until
   the dialog is closed.
 - Each `WebContentsView` is a separate CDP target, so it is listed as its own window. `<webview>` tags are
