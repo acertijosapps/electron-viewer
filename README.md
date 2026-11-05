@@ -165,6 +165,11 @@ the query string or the body and is optional with a single window. The server on
 127.0.0.1, only accepts a local `Host` and origin, and `POST` requests require
 `content-type: application/json`, so other websites can't drive your apps.
 
+Parameters are validated with the same limits as the MCP tools. A missing, unknown or out-of-range field
+gets a `400` that names it, e.g.
+`{"error": "POST /api/swipe: missing x1, y1, x2, y2; unknown fromX, fromY, toX, toY (fields: window, x1, y1, x2, y2, ms)"}`.
+Coordinates are normalized 0–1 and query string values are converted to numbers and booleans.
+
 | Endpoint | |
 | --- | --- |
 | `GET /api/windows` | `[{ id, name, cdpPort, inspectPort, main, windows: [{ id, title, url }] }]` |
@@ -217,7 +222,9 @@ the query string or the body and is optional with a single window. The server on
 
 - CDP only sees web content. Native UI (title bar, menus, dialogs, tray, notifications) isn't shown or
   clickable; use `evaluate_main` to drive it from the main process. Capturing it would mean capturing the
-  screen, and with it any other window on top of the app, so the viewer doesn't.
+  screen, and with it any other window on top of the app, so the viewer doesn't: the frame mode and
+  `screenshot` `frame` option of 1.0.0 were removed in 1.1.0 for that reason (see the
+  [CHANGELOG](./CHANGELOG.md)).
 - Synchronous dialogs (`dialog.showMessageBoxSync`) block the main process: `evaluate_main` waits until
   the dialog is closed.
 - Each `WebContentsView` is a separate CDP target, so it is listed as its own window. `<webview>` tags are

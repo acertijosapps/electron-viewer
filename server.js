@@ -17,6 +17,7 @@ import {
   resolveWindow,
   viewport,
 } from './lib/electron.js';
+import { validateApi } from './lib/schemas.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(ROOT, 'public');
@@ -308,7 +309,7 @@ async function handleApi(req, res, url) {
   const route = `${req.method} ${url.pathname}`;
   const params = Object.fromEntries(url.searchParams);
   if (route === 'GET /api/screenshot') {
-    const shot = await actions.screenshot(params);
+    const shot = await actions.screenshot(validateApi(route, params));
     const headers = {
       'content-type': shot.mimeType,
       'cache-control': 'no-store',
@@ -329,9 +330,14 @@ async function handleApi(req, res, url) {
     if (!/^application\/json\b/.test(req.headers['content-type'] || '') || !isLocalOrigin(req.headers.origin)) {
       throw Object.assign(new Error('application/json from a local origin is required'), { status: 403 });
     }
-    input = { ...params, ...(await readJson(req)) };
+    const body = await readJson(req);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      throw Object.assign(new Error('The body must be a JSON object'), { status: 400 });
+    }
+    input = { ...params, ...body };
   }
-  const result = await handler(input);
+  // Mismos límites que el MCP, con mensajes que dicen qué campo falta o sobra.
+  const result = await handler(validateApi(route, input));
   res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
   res.end(JSON.stringify(result ?? null));
 }
